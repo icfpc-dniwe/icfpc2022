@@ -9,11 +9,13 @@ dependencies:
   - bytestring
   - text
   - aeson
+  - linear
 
 default-extensions:
   - OverloadedStrings
   - RecordWildCards
   - ExistentialQuantification
+  - RecordDotSyntax
   - TupleSections
   - TypeOperators
   - FlexibleInstances
