@@ -1,4 +1,4 @@
-module ICFPC2022.Solver.Dumb where
+module ICFPC2022.Solver.Pixelize where
 
 import ICFPC2022.Types
 import ICFPC2022.Fields
