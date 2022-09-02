@@ -1,7 +1,19 @@
 import numpy as np
+from enum import Enum, auto
 import typing as t
 
 
 RGBAImage = np.ndarray  # HxWxC image in RGBA channel format
 LabelImage = np.ndarray  # HxW matrix of labels (np.int32)
 Box = np.ndarray  # bounding box in (x_min, y_min, x_max, y_max) format
+
+
+class Orientation(Enum):
+    X = auto()
+    Y = auto()
+
+    def __str__(self):
+        if self is self.X:
+            return 'X'
+        else:
+            return 'Y'

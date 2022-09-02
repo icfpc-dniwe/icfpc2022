@@ -1,5 +1,6 @@
 from pathlib import Path
 from .image_utils import load_image, collect_boxes
+from .types import Orientation
 
 
 def run():
@@ -10,3 +11,4 @@ def run():
 
 if __name__ == '__main__':
     run()
+    print(Orientation.X, Orientation.Y)
