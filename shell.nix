@@ -2,19 +2,32 @@
 
 let
 
-  inherit (nixpkgs) pkgs;
+  inherit (nixpkgs) pkgs lib;
 
-  haskellPackages = if compiler == "default"
-                       then pkgs.haskellPackages
-                       else pkgs.haskell.packages.${compiler};
+  haskellPackages_ = if compiler == "default"
+                        then pkgs.haskellPackages
+                        else pkgs.haskell.packages.${compiler};
 
-  haskellPackages_ = haskellPackages.override {
+  hlib = pkgs.haskell.lib;
+
+  haskellPackages = haskellPackages_.override {
     overrides = self: super: {
     };
   };
 
-  drv = haskellPackages_.callPackage ./default.nix {};
+  drv = haskellPackages.callPackage ./default.nix {};
+
+  shell = drv.env.overrideAttrs (self: {
+    nativeBuildInputs = self.nativeBuildInputs ++ [
+      haskellPackages.cabal-install
+      haskellPackages.hpack
+    ];
+  });
+
+  drv_ = drv.overrideAttrs (self: {
+    passthru = self.passthru // { shell = shell; };
+  });
 
 in
 
-  if pkgs.lib.inNixShell then drv.env else drv
+  if lib.inNixShell then drv_.shell else drv_

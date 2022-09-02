@@ -10,6 +10,7 @@ dependencies:
   - text
   - aeson
   - linear
+  - vector
 
 default-extensions:
   - OverloadedStrings
@@ -41,8 +42,9 @@ library:
   source-dirs: src
 
 executables:
-  client:
-    main: Client.hs
+  solve:
+    main: Solve.hs
     source-dirs: exe
     dependencies:
       - icfpc2022
+      - JuicyPixels
