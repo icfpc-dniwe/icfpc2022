@@ -1,4 +1,9 @@
 module ICFPC2022.Utils where
 
-pixelDistance = 0
+import ICFP2022.Types
+import Linear.Metric
+
+pixelDistance :: Color -> Color -> Float
+pixelDistance left right = norm $ left - right
+
 imageDistance = 0
