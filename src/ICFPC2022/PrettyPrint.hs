@@ -35,3 +35,6 @@ printMove (Swap     (SwapMove     {..})) =
   "swap " <> intDec swapBlockA <> " " <> intDec swapBlockB
 printMove (Merge    (MergeMove    {..})) =
   "merge " <> intDec mergeBlockA <> " " <> intDec mergeBlockB
+
+printProgram :: Program -> Builder
+printProgram = mconcat . map (\move -> printMove move <> "\n")

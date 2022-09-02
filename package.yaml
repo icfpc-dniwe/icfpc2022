@@ -12,6 +12,8 @@ dependencies:
   - linear
   - containers
   - vector
+  - massiv
+  - JuicyPixels
 
 default-extensions:
   - OverloadedStrings
