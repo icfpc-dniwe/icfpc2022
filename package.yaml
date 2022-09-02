@@ -1,0 +1,47 @@
+name: icfpc2022
+version: 0.1.0.0
+author: Nikolay Amiantov, Andrey Shadrikov et al
+maintainer: ab@fmap.me
+category: Fun
+
+dependencies:
+  - base >= 4.8
+  - bytestring
+  - text
+  - aeson
+
+default-extensions:
+  - OverloadedStrings
+  - RecordWildCards
+  - ExistentialQuantification
+  - TupleSections
+  - TypeOperators
+  - FlexibleInstances
+  - RankNTypes
+  - PolyKinds
+  - MultiWayIf
+  - LambdaCase
+  - FlexibleContexts
+  - ViewPatterns
+  - ScopedTypeVariables
+  - KindSignatures
+  - DataKinds
+  - ConstraintKinds
+  - MultiParamTypeClasses
+  - GeneralizedNewtypeDeriving
+  - NamedFieldPuns
+  - DeriveGeneric
+  - TemplateHaskell
+  - QuasiQuotes
+
+ghc-options: -Wall
+
+library:
+  source-dirs: src
+
+executables:
+  client:
+    main: Client.hs
+    source-dirs: exe
+    dependencies:
+      - icfpc2022
