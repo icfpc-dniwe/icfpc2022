@@ -7,18 +7,18 @@ import Data.Set (Set)
 
 type Offset = Point
 
-data SimpleBlock = SimpleBlock {
-      simple_offset :: Offset
-    , color :: Color
-} deriving (Show, Eq)
+data BlockOrientation = BlockX | BlockY
+                      deriving (Show, Eq)
 
-type ChildBlocks = Set SimpleBlock
+data BlockTree = SimpleBlock { blockColor :: Color }
+               | ComplexBlock { blockOrientation :: BlockOrientation
+                              , blockOffset :: Int
+                              , blockSubA :: BlockTree
+                              , blockSubB :: BlockTree
+                              }
+               deriving (Show, Eq)
 
-data ComplexBlock = ComplexBlock {
-      complex_offset :: Offset
-    , childs :: ChildBlocks
-} deriving (Show, Eq)
-
-data Block = Simple SimpleBlock
-           | Complex ComplexBlock
+data Field = Field { fieldSize :: I2
+                   , fieldBlocks :: BlockTree
+                   }
            deriving (Show, Eq)
