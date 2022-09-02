@@ -15,7 +15,6 @@ default-extensions:
   - OverloadedStrings
   - RecordWildCards
   - ExistentialQuantification
-  - RecordDotSyntax
   - TupleSections
   - TypeOperators
   - FlexibleInstances

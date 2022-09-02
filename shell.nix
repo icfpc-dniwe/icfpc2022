@@ -4,7 +4,7 @@ let
 
   inherit (nixpkgs) pkgs;
 
-  haskellPackages = pkgs.haskell.packages.ghc941;
+  haskellPackages = pkgs.haskell.packages.ghc924;
 
   haskellPackages_ = haskellPackages.override {
     overrides = self: super: {
