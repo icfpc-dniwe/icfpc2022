@@ -13,7 +13,7 @@ def cluster_colors(img: RGBAImage) -> LabelImage:
 
 def collect_boxes(img: RGBAImage) -> t.Sequence[Box]:
     src_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    src_gray = cv2.medianBlur(src_gray, (7, 7))
+    src_gray = cv2.medianBlur(src_gray, 7)
 
     threshold = 20
 
