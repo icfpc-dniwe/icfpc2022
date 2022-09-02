@@ -44,9 +44,9 @@ data Move = LineCut LineCutMove
 
 type Program = [Move]
 
-move_cost :: Move -> Int
-move_cost (LineCut _) = 7
-move_cost (PointCut _) = 10
-move_cost (Color _) = 5
-move_cost (Swap _) = 3
-move_cost (Merge _) = 1
+moveCost :: Move -> Int
+moveCost (LineCut _) = 7
+moveCost (PointCut _) = 10
+moveCost (Color _) = 5
+moveCost (Swap _) = 3
+moveCost (Merge _) = 1
