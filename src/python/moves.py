@@ -4,7 +4,7 @@ from .types import Orientation, Program
 
 
 def add_line_cut_move(block_id: str, orientation: Orientation, offset: int) -> str:
-    return f'cut [{block_id}] {orientation} [{offset}]'
+    return f'cut [{block_id}] [{orientation}] [{offset}]'
 
 
 def add_point_cut_move(block_id: str, offset_point: t.Union[np.ndarray, t.Tuple[int, int]]) -> str:
