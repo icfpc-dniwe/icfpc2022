@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 from pathlib import Path
 import typing as t
+from PIL import Image as PILImage
 import logging
 
 from .types import RGBAImage, LabelImage, Box, Color
@@ -47,5 +48,16 @@ def load_image(img_path: Path) -> t.Optional[RGBAImage]:
         return rgba_img
 
 
-def get_palette(img: RGBAImage) -> t.Tuple[LabelImage, t.Dict[int, Color]]:
-    pass
+def determine_num_colors(img: RGBAImage) -> int:
+    return 10
+
+
+def get_palette(img: RGBAImage, num_color: t.Optional[int] = None) -> t.Tuple[LabelImage, t.Dict[int, Color]]:
+    pil_img = PILImage.fromarray(img)
+    if num_color is None:
+        num_colors = determine_num_colors(img)
+    paletted_img = pil_img.quantize(num_colors, method=PILImage.Quantize.LIBIMAGEQUANT)
+    colors = np.array(paletted_img.getpalette(None)).reshape((-1, 4))[:10]
+    label_map = np.asarray(paletted_img).astype(np.int32)
+    lable_dict = {idx: color for idx, color in enumerate(label_map)}
+    return colors, lable_dict
