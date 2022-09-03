@@ -1,6 +1,8 @@
+import sys
 import typing as t
 from pathlib import Path
 
+import cv2
 import numpy as np
 
 from ..image_utils import get_area, get_average_color, load_image
@@ -12,12 +14,12 @@ from ..types import RGBAImage, Program, Box
 def solve_by_splitting_evenly_and_coloring_each_block_by_its_average_color(source_img: RGBAImage, block_max_size: int) -> t.Tuple[RGBAImage, Program]:
     canvas = np.zeros_like(source_img)
     whole_prog = []
+    max_y = canvas.shape[0]
 
     def get_max_depth(whole_size: int, block_max_size: int) -> int:
         blocks_max_num = whole_size / block_max_size
 
         tmp = blocks_max_num
-        print(blocks_max_num)
         depth = 0
         while tmp >= 4:
             tmp /= 4
@@ -42,10 +44,13 @@ def solve_by_splitting_evenly_and_coloring_each_block_by_its_average_color(sourc
             cur_prog += pcut_recursively_and_color_at_end(np.array([x_min, y_new, x_new, y_max]), cur_depth-1, prefix=f'{prefix}.3')
 
         else:
-            print(x_min, y_min, x_max, y_max)
-            color = get_average_color(canvas[y_min:y_max, x_min:x_max])
+            # cv2.imshow(prefix, source_img[y_min:y_max, x_min:x_max])
+            # cv2.waitKey(0)
+            color = get_average_color(source_img[max_y - y_max:max_y-y_min, x_min:x_max])
             cur_prog.append(add_color_move(f'{prefix}', color))
             canvas[y_min:y_max, x_min:x_max] = color
+            # cv2.imshow(prefix, canvas[y_min:y_max, x_min:x_max])
+            # cv2.waitKey(0)
 
         return cur_prog
 
@@ -55,11 +60,18 @@ def solve_by_splitting_evenly_and_coloring_each_block_by_its_average_color(sourc
 
 
 if __name__ == '__main__':
-    problems_path = Path('../problems')
-    img = load_image(problems_path / '16.png')
-    canvas, prog = solve_by_splitting_evenly_and_coloring_each_block_by_its_average_color(img, 1236)
+    problem_num = sys.argv[1]
 
-    print(prog)
+    problems_path = Path('../problems')
+    img = load_image(problems_path / f'{problem_num}.png')
+
+    # cv2.imshow('a', img)
+    # cv2.waitKey(0)
+
+    canvas, prog = solve_by_splitting_evenly_and_coloring_each_block_by_its_average_color(img, 1236)
 
     with open('test_average_min_block.txt', 'w') as f:
         print('\n'.join(prog), file=f)
+
+    # cv2.imshow('a', canvas)
+    # cv2.waitKey(0)

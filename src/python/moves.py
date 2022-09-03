@@ -12,7 +12,7 @@ def add_point_cut_move(block_id: str, offset_point: t.Union[np.ndarray, t.Tuple[
 
 
 def add_color_move(block_id: str, color: t.Union[np.ndarray, t.Tuple[int, int, int, int]]) -> str:
-    return f'color [{block_id}] [{color[0]},{color[1]},{color[2]},{color[3]}]'
+    return f'color [{block_id}] [{int(color[0])},{int(color[1])},{int(color[2])},{int(color[3])}]'
 
 
 def add_merge_move(left_block_id: str, right_block_id: str) -> str:
