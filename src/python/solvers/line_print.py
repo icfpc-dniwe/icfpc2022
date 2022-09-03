@@ -20,7 +20,7 @@ def render_by_line(img: RGBAImage) -> t.Tuple[RGBAImage, t.List[Move]]:
         moves = [Merge(cur_columns[0], cur_columns[1])]
         cur_global_id += 1
         if len(cur_columns) > 2:
-            for cur_col in cur_columns[2]:
+            for cur_col in cur_columns[2:]:
                 moves.append(Merge(f'{cur_global_id}', cur_col))
                 cur_global_id += 1
         return moves, cur_global_id
