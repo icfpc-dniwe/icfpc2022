@@ -4,7 +4,7 @@ from pathlib import Path
 import typing as t
 import logging
 
-from .types import RGBAImage, LabelImage, Box
+from .types import RGBAImage, LabelImage, Box, Color
 
 
 def cluster_colors(img: RGBAImage) -> LabelImage:
