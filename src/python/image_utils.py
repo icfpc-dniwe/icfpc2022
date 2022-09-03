@@ -43,7 +43,7 @@ def load_image(img_path: Path) -> t.Optional[RGBAImage]:
         return new_img
     else:
         rgba_img = np.zeros_like(img)
-        rgba_img[:, :, :-1] = img[:, :, ::-1]
+        rgba_img[:, :, :-1] = img[:, :, 2::-1]
         rgba_img[:, :, -1] = img[:, :, -1]
         return rgba_img
 
