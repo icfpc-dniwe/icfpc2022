@@ -3,9 +3,11 @@ import numpy as np
 from pathlib import Path
 import typing as t
 from PIL import Image as PILImage
+from sklearn.cluster import OPTICS
 import logging
 
 from .types import RGBAImage, LabelImage, Box, Color
+from .metrics import config_mosaic_metric
 
 
 def cluster_colors(img: RGBAImage) -> LabelImage:
@@ -49,7 +51,49 @@ def load_image(img_path: Path) -> t.Optional[RGBAImage]:
 
 
 def determine_num_colors(img: RGBAImage) -> int:
-    return 10
+    r_img = cv2.resize(img, (50, 50), interpolation=cv2.INTER_AREA)
+    flat_img = r_img.reshape((-1, 4)).astype(np.float64) / 255.
+    cluster = OPTICS(min_samples=20, n_jobs=12)
+    cluster.fit(flat_img)
+    n_clusters = len(set(cluster.labels_)) - (1 if -1 in cluster.labels_ else 0)
+    return max(1, n_clusters)
+
+
+def deal_with_noise(
+        img: RGBAImage,
+        labeled_img: LabelImage,
+        color_map: t.Dict[int, Color],
+        tol: float = 1e-2
+) -> t.Tuple[LabelImage, t.Dict[int, Color]]:
+    f_img = img.astype(np.float64) / 255.
+    new_map = labeled_img.copy()
+    sorted_color_map = [(key, val) for key, val in color_map.items()]
+    palette = np.array([el[1] for el in sorted_color_map]) / 255.
+    for next_pixel in zip(*np.where(labeled_img == -1)):
+        palette_dist = np.mean((f_img[next_pixel[0], next_pixel[1]] - palette) ** 2)
+        if np.min(palette_dist) < tol:
+            idx = np.argmin(palette_dist)
+            new_label = sorted_color_map[idx][1]
+            new_map[next_pixel[0], next_pixel[1]] = new_label
+        else:
+            new_color = 0
+    return new_map
+
+
+def mosaic_image(img: RGBAImage, eps: float = 1e-6) -> t.Tuple[LabelImage, t.Dict[int, Color]]:
+    r_img = cv2.resize(img, (50, 50), interpolation=cv2.INTER_AREA)
+    metric = config_mosaic_metric(eps=eps)
+    cluster = OPTICS(min_samples=20, metric=metric, n_jobs=12)
+    indexed_img = np.array([(y, x, r_img[y, x, 0] / 255, r_img[y, x, 1] / 255, r_img[y, x, 2] / 255, r_img[y, x, 3] / 255)
+                            for y in r_img.shape[0] for x in r_img.shape[1]], dtype=np.float64)
+    cluster.fit(indexed_img)
+    labels = cluster.labels_.reshape((r_img.shape[0], r_img.shape[1]))
+    # new_labels = deal_with_noise(r_img, labels)
+    color_map = {}
+    for cur_label in np.unique(labels):
+        color_map[cur_label] = np.mean(r_img[labels == cur_label], axis=(0, 1))
+    label_img = cv2.resize(labels, (img.shape[0], img.shape[1]), interpolation=cv2.INTER_NEAREST)
+    return label_img, color_map
 
 
 def get_palette(img: RGBAImage, num_color: t.Optional[int] = None) -> t.Tuple[LabelImage, t.Dict[int, Color]]:
