@@ -12,7 +12,7 @@ def cluster_colors(img: RGBAImage) -> LabelImage:
 
 
 def collect_boxes(img: RGBAImage) -> t.Sequence[Box]:
-    src_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    src_gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
     src_gray = cv2.medianBlur(src_gray, 7)
 
     threshold = 20
@@ -38,10 +38,13 @@ def load_image(img_path: Path) -> t.Optional[RGBAImage]:
         return np.tile(img[:, :, np.newaxis], (1, 1, 4))
     elif img.shape[2] == 3:
         new_img = np.zeros((*img.shape[:2], 4), dtype=np.uint8)
-        new_img[:, :, :4] = img
+        new_img[:, :, :-1] = img[:, :, ::-1]
         return new_img
     else:
-        return img
+        rgba_img = np.zeros_like(img)
+        rgba_img[:, :, :-1] = img[:, :, ::-1]
+        rgba_img[:, :, -1] = img[:, :, -1]
+        return rgba_img
 
 
 def get_palette(img: RGBAImage) -> t.Tuple[LabelImage, t.Dict[int, Color]]:
