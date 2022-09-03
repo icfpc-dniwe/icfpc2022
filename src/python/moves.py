@@ -1,6 +1,6 @@
 import numpy as np
 import typing as t
-from .types import Orientation
+from .types import Orientation, Program
 
 
 def add_line_cut_move(block_id: str, orientation: Orientation, offset: int) -> str:
@@ -101,3 +101,7 @@ class Merge(Move):
 
     def program(self) -> str:
         return add_merge_move(self.left_block_id, self.right_block_id)
+
+
+def get_program(moves: t.Iterable[Move]) -> Program:
+    return list(map(lambda m: m.program(), moves))

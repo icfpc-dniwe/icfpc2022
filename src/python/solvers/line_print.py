@@ -33,7 +33,8 @@ def render_by_line(img: RGBAImage) -> t.Tuple[RGBAImage, t.List[Move]]:
     need_secure = False
     for cur_line in range(h):
         for cur_x in range(w):
-            if color_needed(cur_x, cur_line):
+            cv_line = h - cur_line - 1
+            if color_needed(cur_x, cv_line):
                 if need_secure:
                     new_moves, new_id = merge_columns()
                     program += new_moves
@@ -48,8 +49,8 @@ def render_by_line(img: RGBAImage) -> t.Tuple[RGBAImage, t.List[Move]]:
                 else:
                     # continue cutting
                     cur_prefix = cur_columns.pop()
-                new_canvas[cur_line:, cur_x:] = img[cur_line, cur_x]
-                program.append(Color(f'{cur_prefix}', img[cur_line, cur_x]))
+                new_canvas[:cv_line+1, cur_x:] = img[cv_line, cur_x]
+                program.append(Color(f'{cur_prefix}', img[cv_line, cur_x]))
                 program.append(LineCut(f'{cur_prefix}', Orientation.X, cur_x))
                 cur_columns += [f'{cur_prefix}.0', f'{cur_prefix}.1']
         if cur_line + 1 < h:
