@@ -12,7 +12,9 @@ dependencies:
   - linear
   - containers
   - vector
+  - mtl
   - massiv
+  - opencv
   - JuicyPixels
 
 default-extensions:

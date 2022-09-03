@@ -6,7 +6,7 @@ import qualified Data.ByteString.Builder as Builder
 
 import ICFPC2022.Picture
 import ICFPC2022.PrettyPrint
-import ICFPC2022.Solver.Dumb
+import ICFPC2022.Solver.Pixelize
 
 main :: IO ()
 main = do

@@ -1,5 +1,6 @@
 module ICFPC2022.PrettyPrint where
 
+import Data.List
 import Data.ByteString.Builder
 
 import Linear
@@ -8,8 +9,8 @@ import ICFPC2022.Types
 import ICFPC2022.Commands
 
 printOrientation :: CutOrientation -> Builder
-printOrientation CutX = "x"
-printOrientation CutY = "y"
+printOrientation CutX = "[x]"
+printOrientation CutY = "[y]"
 
 printPoint :: Point -> Builder
 printPoint (V2 x y) = "[" <> intDec x <> "," <> intDec y <> "]"
@@ -21,20 +22,23 @@ printColor (V4 r g b a) =
   word8Dec b <> "," <>
   word8Dec a <> "]"
 
+printBlockId :: BlockId -> Builder
+printBlockId blockId = "[" <> (mconcat  $ intersperse "." $ map intDec blockId) <> "]"
+
 printMove :: Move -> Builder
-printMove (LineCut  (LineCutMove  {..})) =
-  "cut " <> intDec lineCutBlock <> " " <>
-  printOrientation lineCutOrientation <> " " <>
-  intDec lineCutOffset
-printMove (PointCut (PointCutMove {..})) =
-  "cut " <> intDec pointCutBlock <> " " <>
+printMove (LineCut  {..}) =
+  "cut " <> printBlockId lineCutBlock <> " " <>
+  printOrientation lineCutOrientation <> " [" <>
+  intDec lineCutOffset <> "]"
+printMove (PointCut {..}) =
+  "cut " <> printBlockId pointCutBlock <> " " <>
   printPoint pointCutPoint
-printMove (Color    (ColorMove    {..})) =
-  "color " <> intDec colorBlock <> " " <> printColor colorValue
-printMove (Swap     (SwapMove     {..})) =
-  "swap " <> intDec swapBlockA <> " " <> intDec swapBlockB
-printMove (Merge    (MergeMove    {..})) =
-  "merge " <> intDec mergeBlockA <> " " <> intDec mergeBlockB
+printMove (Color    {..}) =
+  "color " <> printBlockId colorBlock <> " " <> printColor colorValue
+printMove (Swap     {..}) =
+  "swap " <> printBlockId swapBlockA <> " " <> printBlockId swapBlockB
+printMove (Merge    {..}) =
+  "merge " <> printBlockId mergeBlockA <> " " <> printBlockId mergeBlockB
 
 printProgram :: Program -> Builder
 printProgram = mconcat . map (\move -> printMove move <> "\n")

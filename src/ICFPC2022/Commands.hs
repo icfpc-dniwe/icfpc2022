@@ -4,49 +4,35 @@ module ICFPC2022.Commands where
 
 import ICFPC2022.Types
 
-type BlockId = Int
+type BlockNumber = Int
+type BlockId = [BlockNumber]
 
 data CutOrientation = CutX | CutY
                     deriving (Show, Eq)
 
-data LineCutMove = LineCutMove { lineCutBlock :: BlockId
-                               , lineCutOrientation :: CutOrientation
-                               , lineCutOffset :: Int
-                               }
-                 deriving (Show, Eq)
-
-data PointCutMove = PointCutMove { pointCutBlock :: BlockId
-                                 , pointCutPoint :: Point
-                                 }
-                  deriving (Show, Eq)
-
-data ColorMove = ColorMove { colorBlock :: BlockId
-                           , colorValue :: Color
-                           }
-               deriving (Show, Eq)
-
-data SwapMove = SwapMove { swapBlockA :: BlockId
-                         , swapBlockB :: BlockId
-                         }
-              deriving (Show, Eq)
-
-data MergeMove = MergeMove { mergeBlockA :: BlockId
-                           , mergeBlockB :: BlockId
-                           }
-               deriving (Show, Eq)
-
-data Move = LineCut LineCutMove
-          | PointCut PointCutMove
-          | Color ColorMove
-          | Swap SwapMove
-          | Merge MergeMove
+data Move = LineCut { lineCutBlock :: BlockId
+                    , lineCutOrientation :: CutOrientation
+                    , lineCutOffset :: Int
+                    }
+          | PointCut { pointCutBlock :: BlockId
+                     , pointCutPoint :: Point
+                     }
+          | Color { colorBlock :: BlockId
+                  , colorValue :: Color
+                  }
+          | Swap { swapBlockA :: BlockId
+                 , swapBlockB :: BlockId
+                 }
+          | Merge { mergeBlockA :: BlockId
+                  , mergeBlockB :: BlockId
+                  }
           deriving (Show, Eq)
 
 type Program = [Move]
 
 moveCost :: Move -> Int
-moveCost (LineCut _) = 7
-moveCost (PointCut _) = 10
-moveCost (Color _) = 5
-moveCost (Swap _) = 3
-moveCost (Merge _) = 1
+moveCost (LineCut {}) = 7
+moveCost (PointCut {}) = 10
+moveCost (Color {}) = 5
+moveCost (Swap {}) = 3
+moveCost (Merge {}) = 1
