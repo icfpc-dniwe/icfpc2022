@@ -4,6 +4,8 @@ from pathlib import Path
 import typing as t
 from PIL import Image as PILImage
 from sklearn.cluster import OPTICS
+from sklearn.feature_extraction.image import grid_to_graph
+from sklearn.cluster import AgglomerativeClustering
 import logging
 
 from .types import RGBAImage, LabelImage, Box, Color
@@ -80,6 +82,13 @@ def deal_with_noise(
     return new_map
 
 
+def get_color_map(img: RGBAImage, label_img: LabelImage) -> t.Dict[int, Color]:
+    color_map = {}
+    for cur_label in np.unique(label_img):
+        color_map[cur_label] = np.mean(img[label_img == cur_label], axis=(0, 1))
+    return color_map
+
+
 def mosaic_image(img: RGBAImage, eps: float = 1e-6) -> t.Tuple[LabelImage, t.Dict[int, Color]]:
     r_img = cv2.resize(img, (50, 50), interpolation=cv2.INTER_AREA)
     metric = config_mosaic_metric(eps=eps)
@@ -89,11 +98,29 @@ def mosaic_image(img: RGBAImage, eps: float = 1e-6) -> t.Tuple[LabelImage, t.Dic
     cluster.fit(indexed_img)
     labels = cluster.labels_.reshape((r_img.shape[0], r_img.shape[1]))
     # new_labels = deal_with_noise(r_img, labels)
-    color_map = {}
-    for cur_label in np.unique(labels):
-        color_map[cur_label] = np.mean(r_img[labels == cur_label], axis=(0, 1))
+    color_map = get_color_map(r_img, labels)
     label_img = cv2.resize(labels, (img.shape[0], img.shape[1]), interpolation=cv2.INTER_NEAREST)
     return label_img, color_map
+
+
+def allgomerative_image(
+        img: RGBAImage,
+        num_clusters: int,
+        rescale_size: t.Optional[int] = None
+) -> t.Tuple[LabelImage, t.Dict[int, Color]]:
+    if rescale_size is not None:
+        orig_shape = img.shape[:2]
+        img = cv2.resize(img, (rescale_size, rescale_size), interpolation=cv2.INTER_AREA)
+    connectivity = grid_to_graph(*img.shape[:2])
+    ward = AgglomerativeClustering(
+        n_clusters=num_clusters, linkage="ward", connectivity=connectivity
+    )
+    ward.fit(img.reshape((-1, 4)))
+    label = np.reshape(ward.labels_, img.shape[:2])
+    if rescale_size is not None:
+        label = cv2.resize(label, orig_shape, interpolation=cv2.INTER_NEAREST)
+    color_map = get_color_map(img, label)
+    return label, color_map
 
 
 def get_palette(img: RGBAImage, num_color: t.Optional[int] = None) -> t.Tuple[LabelImage, t.Dict[int, Color]]:
