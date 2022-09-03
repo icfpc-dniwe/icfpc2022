@@ -9,7 +9,7 @@ from .box_utils import box_wh, box_size
 
 def run():
     problems_path = Path('../problems')
-    img = load_image(problems_path / '1.png')
+    img = load_image(problems_path / '2.png', revert=True)
     # boxes = collect_boxes(img)
     # boxes = list(filter(lambda b: box_size(b) > 9 and min(box_wh(b)) > 2, boxes))
     # print(boxes)

@@ -33,13 +33,14 @@ def render_by_line(img: RGBAImage) -> t.Tuple[RGBAImage, t.List[Move]]:
     need_secure = False
     for cur_line in range(h):
         for cur_x in range(w):
-            cv_line = h - cur_line - 1
+            # cv_line = h - cur_line - 1
+            cv_line = cur_line
             if color_needed(cur_x, cv_line):
                 if need_secure:
                     new_moves, new_id = merge_columns()
                     program += new_moves
                     global_block_id = new_id
-                    program.append(LineCut(f'{global_block_id}', Orientation.Y, cur_line + 1))
+                    program.append(LineCut(f'{global_block_id}', Orientation.Y, cur_line))
                     cur_block_prefix = f'{global_block_id}.1'
                     cur_columns = []
                     need_secure = False
