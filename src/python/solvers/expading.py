@@ -1,5 +1,6 @@
 import numpy as np
 import cv2
+from tqdm import tqdm
 import typing as t
 from itertools import product
 from more_itertools import unzip
@@ -46,21 +47,21 @@ def get_boxes(
     real_rendered_canvas = np.zeros_like(img) + 255
     boxes = []
     colors = []
-    for cur_x, cur_y in starting_points:
+    for cur_x, cur_y in tqdm(starting_points):
         cur_color = img[cur_y, cur_x]
         cur_scorring = lambda box: expand_cost_fn(img, real_rendered_canvas, cur_color, box,
                                                   real_canvas_area)
         new_box = expand_pixel((cur_x, cur_y), h, w, cur_scorring)
         if new_box is not None:
             score = cur_scorring(new_box)
-            print(cur_y, cur_x, '|> adding a new box?:', new_box, cur_color, score)
+            # print(cur_y, cur_x, '|> adding a new box?:', new_box, cur_color, score)
             if score < 0:
-                print(cur_y, cur_x, '|> adding a new box:', new_box, cur_color)
+                # print(cur_y, cur_x, '|> adding a new box:', new_box, cur_color)
                 boxes.append(new_box)
                 colors.append(cur_color)
                 real_rendered_canvas[new_box[1]:new_box[3], new_box[0]:new_box[2]] = cur_color
     sim_score = image_similarity(img, real_rendered_canvas)
-    render_score = sum([static_cost(ColorMove, box_size(cur_box), real_canvas_area) for cur_box in boxes])
+    render_score = sum([5 * static_cost(ColorMove, box_size(cur_box), real_canvas_area) for cur_box in boxes])
     total_score = sim_score + render_score
     print('Sim score:', sim_score)
     print('Rendering score:', render_score)
@@ -68,13 +69,29 @@ def get_boxes(
     return list(zip(boxes, colors)), total_score
 
 
-def produce_program(img: RGBAImage) -> t.Tuple[RGBAImage, Program]:
+def produce_program(
+        img: RGBAImage,
+        num_random_starts: int = 0,
+        num_random_points: int = 1000
+) -> t.Tuple[RGBAImage, Program]:
     h, w = img.shape[:2]
     starting_points = list(product(range(0, w, 8), range(0, h, 8)))
     results, score = get_boxes(img, starting_points)
-    if len(results) < 1:
+    top_score = score
+    top_results = results
+    for _ in range(num_random_starts):
+        starting_x = np.random.randint(0, w, size=num_random_points)
+        starting_y = np.random.randint(0, h, size=num_random_points)
+        starting_points = list(zip(starting_x, starting_y))
+        results, score = get_boxes(img, starting_points)
+        if score < top_score:
+            top_score = score
+            top_results = results
+    print('Top Score:', top_score)
+    print('Num boxes:', len(top_results))
+    if len(top_results) < 1:
         return img, ['# nothing to do here']
-    boxes, colors = unzip(results)
+    boxes, colors = unzip(top_results)
     new_boxes = []
     for cur_box in boxes:
         if cur_box[0] == 0:

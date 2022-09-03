@@ -1,4 +1,5 @@
 import click
+import json
 from pathlib import Path
 from matplotlib import pyplot as plt
 from .image_utils import load_image, collect_boxes, allgomerative_image, get_colored_img
@@ -6,8 +7,21 @@ from .types import Orientation
 from .solvers.straight import render_straight
 from .solvers.expading import produce_program
 from .solvers.line_print import render_by_line
+from .solvers import color_blocks
 from .moves import get_program
 from .box_utils import box_wh, box_size
+
+
+def blocks_run():
+    problems_path = Path('../problems')
+    img = load_image(problems_path / '30.png', revert=True)
+    with (problems_path / '30.initial.json').open('r') as f:
+        canvas_info = json.load(f)
+    blocks_info = canvas_info['blocks']
+    moves = color_blocks.produce_program(img, blocks_info)
+    prog = get_program(moves)
+    with open('test_prog.txt', 'w') as f:
+        print('\n'.join(prog), file=f)
 
 
 def test_run():
@@ -27,7 +41,7 @@ def test_run():
     # plt.imshow(canvas)
     # plt.savefig('canvas.pdf')
     # prog = get_program(moves)
-    canvas, prog = produce_program(img)
+    canvas, prog = produce_program(img, num_random_starts=10)
     plt.imshow(canvas)
     plt.savefig('canvas.pdf')
     with open('test_prog.txt', 'w') as f:
@@ -39,7 +53,7 @@ def test_run():
 @click.option('-o', '--output-path', type=Path)
 def main_run(problem_path: Path, output_path: Path):
     img = load_image(problem_path, revert=True)
-    canvas, prog = produce_program(img)
+    canvas, prog = produce_program(img, num_random_starts=10)
     with output_path.open('w') as f:
         print('\n'.join(prog), file=f)
 
