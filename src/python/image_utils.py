@@ -139,4 +139,4 @@ def get_area(img: RGBAImage) -> int:
 
 
 def get_average_color(img: RGBAImage):
-    return np.array([np.average(img[:, :, i]) for i in range(4)])
+    return np.mean(img, axis=(0, 1))
