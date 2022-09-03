@@ -28,26 +28,23 @@ def solve_by_splitting_evenly_and_coloring_each_block_by_its_average_color(sourc
     whole_size = get_area(source_img)
     depth = get_max_depth(whole_size, block_max_size)
 
-
-    def pcut_recursively_and_color_at_end(cur_box: Box, cur_depth: int, prefix: str):
+    def pcut_recursively_and_color_at_end(cur_box: Box, cur_depth: int, prefix: str) -> t.List[str]:
         cur_prog = []
         x_min, y_min, x_max, y_max = cur_box
-        x_new, y_new = (x_min + x_max)/2, (y_min + y_max)/2
+        x_min, y_min, x_max, y_max =  int(x_min), int(y_min), int(x_max), int(y_max)
+        x_new, y_new = int((x_min + x_max)/2), int((y_min + y_max)/2)
 
         if cur_depth > 0:
-            cur_prog += [
-                add_point_cut_move(f'{prefix}', (x_new, y_new)),
-                pcut_recursively_and_color_at_end(np.array([x_min, y_min, x_new, y_new]), cur_depth-1, prefix=f'{prefix}.0'),
-                pcut_recursively_and_color_at_end(np.array([x_new, y_min, x_max, y_new]), cur_depth-1, prefix=f'{prefix}.1'),
-                pcut_recursively_and_color_at_end(np.array([x_new, y_new, x_max, y_max]), cur_depth-1, prefix=f'{prefix}.2'),
-                pcut_recursively_and_color_at_end(np.array([x_min, y_new, x_new, y_max]), cur_depth-1, prefix=f'{prefix}.3'),
-            ]
+            cur_prog += [add_point_cut_move(f'{prefix}', (x_new, y_new))]
+            cur_prog += pcut_recursively_and_color_at_end(np.array([x_min, y_min, x_new, y_new]), cur_depth-1, prefix=f'{prefix}.0')
+            cur_prog += pcut_recursively_and_color_at_end(np.array([x_new, y_min, x_max, y_new]), cur_depth-1, prefix=f'{prefix}.1')
+            cur_prog += pcut_recursively_and_color_at_end(np.array([x_new, y_new, x_max, y_max]), cur_depth-1, prefix=f'{prefix}.2')
+            cur_prog += pcut_recursively_and_color_at_end(np.array([x_min, y_new, x_new, y_max]), cur_depth-1, prefix=f'{prefix}.3')
 
         else:
-            color = get_average_color()
-            cur_prog += [
-                add_color_move(f'{prefix}', color)
-            ]
+            print(x_min, y_min, x_max, y_max)
+            color = get_average_color(canvas[y_min:y_max, x_min:x_max])
+            cur_prog.append(add_color_move(f'{prefix}', color))
             canvas[y_min:y_max, x_min:x_max] = color
 
         return cur_prog
@@ -58,9 +55,11 @@ def solve_by_splitting_evenly_and_coloring_each_block_by_its_average_color(sourc
 
 
 if __name__ == '__main__':
-    problems_path = Path('../../problems')
+    problems_path = Path('../problems')
     img = load_image(problems_path / '16.png')
     canvas, prog = solve_by_splitting_evenly_and_coloring_each_block_by_its_average_color(img, 1236)
+
+    print(prog)
 
     with open('test_average_min_block.txt', 'w') as f:
         print('\n'.join(prog), file=f)
