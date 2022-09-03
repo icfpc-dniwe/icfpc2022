@@ -1,3 +1,4 @@
+import click
 from pathlib import Path
 from matplotlib import pyplot as plt
 from .image_utils import load_image, collect_boxes, allgomerative_image, get_colored_img
@@ -33,5 +34,15 @@ def test_run():
         print('\n'.join(prog), file=f)
 
 
+@click.command()
+@click.option('-p', '--problem-path', type=Path)
+@click.option('-o', '--output-path', type=Path)
+def main_run(problem_path: Path, output_path: Path):
+    img = load_image(problem_path, revert=True)
+    canvas, prog = produce_program(img)
+    with output_path.open('w') as f:
+        print('\n'.join(prog), file=f)
+
+
 if __name__ == '__main__':
-    test_run()
+    main_run()

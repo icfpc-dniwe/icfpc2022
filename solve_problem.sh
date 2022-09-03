@@ -25,6 +25,7 @@ trap cleanup INT TERM EXIT
 
 out_path="$tmpdir/solution.txt"
 
-cabal exec solve "problems/$problem_id.png" > "$out_path"
+# cabal exec solve "problems/$problem_id.png" > "$out_path"
+cd src && python -m python -p "../problems/$problem_id.png" -o "$out_path"
 
 curl -v -H "Authorization: Bearer $api_token" -F "file=@$out_path" "https://robovinci.xyz/api/submissions/$problem_id/create"
