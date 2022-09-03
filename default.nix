@@ -1,5 +1,5 @@
 { mkDerivation, aeson, base, bytestring, containers, JuicyPixels
-, lib, linear, massiv, mtl, opencv, text, vector
+, lib, linear, massiv, mtl, text, vector
 }:
 mkDerivation {
   pname = "icfpc2022";
@@ -8,12 +8,12 @@ mkDerivation {
   isLibrary = true;
   isExecutable = true;
   libraryHaskellDepends = [
-    aeson base bytestring containers JuicyPixels linear massiv mtl
-    opencv text vector
+    aeson base bytestring containers JuicyPixels linear massiv mtl text
+    vector
   ];
   executableHaskellDepends = [
-    aeson base bytestring containers JuicyPixels linear massiv mtl
-    opencv text vector
+    aeson base bytestring containers JuicyPixels linear massiv mtl text
+    vector
   ];
   license = "unknown";
   mainProgram = "solve";
