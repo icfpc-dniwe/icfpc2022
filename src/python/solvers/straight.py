@@ -79,7 +79,7 @@ if __name__ == '__main__':
     #     np.array([0, 255, 0, 255]),
     # ]
 
-    canvas, prog = render_straight_copy(img, boxes)
+    canvas, prog = render_straight(img, boxes)
 
     with open('test_render_straight.txt', 'w') as f:
         print('\n'.join(prog), file=f)
