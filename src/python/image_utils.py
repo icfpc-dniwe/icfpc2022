@@ -42,3 +42,7 @@ def load_image(img_path: Path) -> t.Optional[RGBAImage]:
         return new_img
     else:
         return img
+
+
+def get_palette(img: RGBAImage) -> t.Tuple[LabelImage, t.Dict[int, Color]]:
+    pass
