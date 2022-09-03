@@ -34,22 +34,33 @@ def collect_boxes(img: RGBAImage) -> t.Sequence[Box]:
     return [np.array((x, y, x + w, y + h)) for (x, y, w, h) in boxes]
 
 
-def load_image(img_path: Path) -> t.Optional[RGBAImage]:
+def load_image(img_path: Path, revert: bool = True) -> t.Optional[RGBAImage]:
     img = cv2.imread(str(img_path), cv2.IMREAD_UNCHANGED)
+    final_image = None
     if img is None:
         logging.error(f'Cannot read image `{img_path}`')
         return None
     if len(img.shape) < 3:
-        return np.tile(img[:, :, np.newaxis], (1, 1, 4))
+        final_image = np.tile(img[:, :, np.newaxis], (1, 1, 4))
     elif img.shape[2] == 3:
         new_img = np.zeros((*img.shape[:2], 4), dtype=np.uint8)
         new_img[:, :, :-1] = img[:, :, ::-1]
-        return new_img
+        final_image = new_img
     else:
         rgba_img = np.zeros_like(img)
         rgba_img[:, :, :-1] = img[:, :, 2::-1]
         rgba_img[:, :, -1] = img[:, :, -1]
-        return rgba_img
+        final_image = rgba_img
+
+    if revert:
+        final_image = revert_y(final_image)
+
+    return final_image
+
+
+def revert_y(image: RGBAImage) -> RGBAImage:
+    flipped = cv2.flip(image, 0)
+    return flipped
 
 
 def determine_num_colors(img: RGBAImage) -> int:
@@ -140,3 +151,11 @@ def get_area(img: RGBAImage) -> int:
 
 def get_average_color(img: RGBAImage):
     return np.mean(img, axis=(0, 1))
+
+
+if __name__ == '__main__':
+    problems_path = Path('../problems')
+    img = load_image(problems_path / f'1.png')
+
+    cv2.imshow('a', img)
+    cv2.waitKey(0)

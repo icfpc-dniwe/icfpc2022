@@ -46,7 +46,8 @@ def solve_by_splitting_evenly_and_coloring_each_block_by_its_average_color(sourc
         else:
             # cv2.imshow(prefix, source_img[y_min:y_max, x_min:x_max])
             # cv2.waitKey(0)
-            color = get_average_color(source_img[max_y - y_max:max_y-y_min, x_min:x_max])
+            # color = get_average_color(source_img[max_y - y_max:max_y-y_min, x_min:x_max])
+            color = get_average_color(source_img[y_min:y_max, x_min:x_max])
             cur_prog.append(add_color_move(f'{prefix}', color))
             canvas[y_min:y_max, x_min:x_max] = color
             # cv2.imshow(prefix, canvas[y_min:y_max, x_min:x_max])
