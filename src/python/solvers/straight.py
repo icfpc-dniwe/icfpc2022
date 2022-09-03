@@ -52,13 +52,15 @@ def render_straight(source_img: RGBAImage, boxes: t.Sequence[Box]) -> t.Tuple[RG
         return x_min > 0 and y_min > 0 and (x_max + 1) < source_img.shape[0]
 
     whole_prog = []
-    for cur_box in boxes:
+    for i, cur_box in enumerate(boxes):
         if use_point_cut(cur_box):
             cur_color = render_box(cur_box)
             cur_prog = get_program_pcut(cur_box, cur_color)
             whole_prog += cur_prog
-            whole_prog += merge_back_pcut()
-            global_block_id += 6
+
+            if i < len(boxes)-1:
+                whole_prog += merge_back_pcut()
+                global_block_id += 6
         else:
             pass
 
