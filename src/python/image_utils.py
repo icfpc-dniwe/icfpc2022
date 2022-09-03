@@ -96,8 +96,15 @@ def deal_with_noise(
 def get_color_map(img: RGBAImage, label_img: LabelImage) -> t.Dict[int, Color]:
     color_map = {}
     for cur_label in np.unique(label_img):
-        color_map[cur_label] = np.mean(img[label_img == cur_label], axis=(0, 1))
+        color_map[cur_label] = np.mean(img[label_img == cur_label], axis=0).astype(np.int32)
     return color_map
+
+
+def get_colored_img(label_img: LabelImage, color_map: t.Dict[int, Color]) -> RGBAImage:
+    img = np.zeros((label_img.shape[0], label_img.shape[1], 4), dtype=np.uint8)
+    for label, color in color_map.items():
+        img[label_img == label] = color
+    return img
 
 
 def mosaic_image(img: RGBAImage, eps: float = 1e-6) -> t.Tuple[LabelImage, t.Dict[int, Color]]:

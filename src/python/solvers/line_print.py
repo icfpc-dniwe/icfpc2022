@@ -50,7 +50,7 @@ def render_by_line(img: RGBAImage) -> t.Tuple[RGBAImage, t.List[Move]]:
                 else:
                     # continue cutting
                     cur_prefix = cur_columns.pop()
-                new_canvas[:cv_line+1, cur_x:] = img[cv_line, cur_x]
+                new_canvas[cv_line:, cur_x:] = img[cv_line, cur_x]
                 program.append(Color(f'{cur_prefix}', img[cv_line, cur_x]))
                 if cur_x + 1 < w:
                     program.append(LineCut(f'{cur_prefix}', Orientation.X, cur_x + 1))
