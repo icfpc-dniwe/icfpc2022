@@ -41,22 +41,23 @@ def expand(old_bbox: np.ndarray, orientation: ExpandOrientation) -> np.ndarray:
 
 
 def expand_pixel(
-        img: RGBAImage,
         point: t.Tuple[int, int],
-        default_color: Color = (0, 0, 0, 0),
+        canvas_height: int,
+        canvas_width: int,
+        is_possible_box_fn: t.Callable[[Box], bool],
         min_block_area: int = 9
-) -> t.Optional[t.Tuple[Box, Color]]:
-    canvas_area = get_area(img)
+) -> t.Optional[Box]:
+    # canvas_area = get_area(img)
     bbox = np.array([point[0], point[1], point[0] + 1, point[1] + 1], dtype=np.int64)
     cur_orientation = ExpandOrientation.Top
 
-    def color_cost(block_area):
-        return static_cost(Color, block_area, canvas_area)
+    # def color_cost(block_area):
+    #     return static_cost(Color, block_area, canvas_area)
 
     def can_expand(orientation: ExpandOrientation) -> bool:
-        if orientation is ExpandOrientation.Top and bbox[3] >= img.shape[0]:
+        if orientation is ExpandOrientation.Top and bbox[3] >= canvas_height:
             return False
-        elif orientation is ExpandOrientation.Right and bbox[2] >= img.shape[1]:
+        elif orientation is ExpandOrientation.Right and bbox[2] >= canvas_width:
             return False
         elif orientation is ExpandOrientation.Bottom and bbox[1] <= 0:
             return False
@@ -67,9 +68,7 @@ def expand_pixel(
     def try_expand(new_orientation: ExpandOrientation) -> bool:
         if can_expand(new_orientation):
             new_bbox = expand(bbox, new_orientation)
-            new_color = np.mean(img[new_bbox[1]:new_bbox[3], new_bbox[0]:new_bbox[2]], axis=(0, 1))
-            return block_similarity(get_part(img, new_bbox), new_color)\
-                   < block_similarity(get_part(img, new_bbox), default_color)
+            return is_possible_box_fn(new_bbox)
         return False
 
     while True:
@@ -83,8 +82,7 @@ def expand_pixel(
     if box_size(bbox) < min_block_area:
         return None
     else:
-        color = np.mean(img[bbox[1]:bbox[3], bbox[0]:bbox[2]], axis=(0, 1))
-        return bbox, color
+        return bbox
 
 
 def process_image(img: RGBAImage) -> t.Tuple[LabelImage, t.Dict[int, Color]]:
