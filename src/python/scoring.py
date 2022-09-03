@@ -5,7 +5,7 @@ from .types import RGBAImage, Color
 from .moves import Move
 
 
-def static_cost(move: Move, block_area: int, canvas_area: int) -> int:
+def static_cost(move: t.Union[Move, t.Type[Move]], block_area: int, canvas_area: int) -> int:
     return round(move.cost() * canvas_area / block_area)
 
 
