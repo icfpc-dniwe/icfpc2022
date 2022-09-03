@@ -3,7 +3,6 @@ import numpy as np
 from pathlib import Path
 import typing as t
 from PIL import Image as PILImage
-from sklearn.cluster import DBSCAN
 import logging
 
 from .types import RGBAImage, LabelImage, Box, Color
@@ -44,14 +43,12 @@ def load_image(img_path: Path) -> t.Optional[RGBAImage]:
         return new_img
     else:
         rgba_img = np.zeros_like(img)
-        rgba_img[:, :, :-1] = img[:, :, 2::-1]
+        rgba_img[:, :, :-1] = img[:, :, ::-1]
         rgba_img[:, :, -1] = img[:, :, -1]
         return rgba_img
 
 
 def determine_num_colors(img: RGBAImage) -> int:
-    hsv_img = cv2.cvtColor()
-    cluster = DBSCAN()
     return 10
 
 
@@ -64,3 +61,11 @@ def get_palette(img: RGBAImage, num_color: t.Optional[int] = None) -> t.Tuple[La
     label_map = np.asarray(paletted_img).astype(np.int32)
     lable_dict = {idx: color for idx, color in enumerate(label_map)}
     return colors, lable_dict
+
+
+def get_area(img: RGBAImage) -> int:
+    return img.shape[0] * img.shape[1]
+
+
+def get_average_color(img: RGBAImage):
+    return np.array([np.average(img[:, :, i]) for i in range(4)])
