@@ -1,8 +1,9 @@
 import typing as t
+from pathlib import Path
 
 import numpy as np
 
-from ..image_utils import get_area, get_average_color
+from ..image_utils import get_area, get_average_color, load_image
 from ..moves import add_point_cut_move, add_color_move
 from ..types import RGBAImage, Program, Box
 
@@ -57,12 +58,9 @@ def solve_by_splitting_evenly_and_coloring_each_block_by_its_average_color(sourc
 
 
 if __name__ == '__main__':
-    pass
+    problems_path = Path('../../problems')
+    img = load_image(problems_path / '16.png')
+    canvas, prog = solve_by_splitting_evenly_and_coloring_each_block_by_its_average_color(img, 1236)
 
-
-def get_area(img: RGBAImage) -> int:
-    return img.shape[0] * img.shape[1]
-
-
-def get_average_color(img: RGBAImage):
-    return np.array([np.average(img[:, :, i]) for i in range(4)])
+    with open('test_average_min_block.txt', 'w') as f:
+        print('\n'.join(prog), file=f)
