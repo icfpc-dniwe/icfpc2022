@@ -3,8 +3,8 @@ from typing import Tuple, List, Optional, Union
 
 import numpy as np
 
-from python.scoring import image_similarity
-from python.types import Box, RGBAImage, Color
+from .scoring import image_similarity
+from .types import Box, RGBAImage, Color
 
 
 class BoxMk2:
@@ -38,17 +38,17 @@ class BoxMk2:
     def set_color(self, img: RGBAImage, color: Color) -> None:
         img[self.__y_min:self.__y_max, self.__x_min:self.__x_max] = color
 
-    def lcut_vertical(self, x: int): # -> Tuple[BoxMk2, BoxMk2]:
+    def lcut_vertical(self, x: int) -> Tuple['BoxMk2', 'BoxMk2']:
         left_box = BoxMk2((self.__x_min, self.__y_min, x, self.__x_max))
         right_box = BoxMk2((x, self.__y_min, self.__x_max, self.__y_max))
         return left_box, right_box
 
-    def lcut_horizontal(self, y: int): # -> Tuple[BoxMk2, BoxMk2]:
+    def lcut_horizontal(self, y: int) -> Tuple['BoxMk2', 'BoxMk2']:
         bottom_box = BoxMk2((self.__x_min, self.__y_min, self.__x_max, y))
         top_box = BoxMk2((self.__x_min, y, self.__x_max, self.__y_max))
         return bottom_box, top_box
 
-    def pcut(self, x: int, y: int): # -> Tuple[BoxMk2, BoxMk2, BoxMk2, BoxMk2]:
+    def pcut(self, x: int, y: int) -> Tuple['BoxMk2', 'BoxMk2', 'BoxMk2', 'BoxMk2']:
         bottom_left_box = BoxMk2((self.__x_min, self.__y_min, x, y))
         bottom_right_box = BoxMk2((x, self.__y_min, self.__x_max, y))
         top_right_box = BoxMk2((x, y, self.__x_max, self.__y_max))
@@ -81,19 +81,19 @@ class Block:
     def set_color(self, img: RGBAImage, color: Color) -> None:
         return self.__box.set_color(img, color)
 
-    def lcut_vertical(self, x: int): # -> Tuple[Block, Block]:
+    def lcut_vertical(self, x: int) -> Tuple['Block', 'Block']:
         left_box, right_box = self.__box.lcut_vertical(x)
         left_block = Block(f'{self.__block_id}.0', left_box)
         right_block = Block(f'{self.__block_id}.1', right_box)
         return left_block, right_block
 
-    def lcut_horizontal(self, y: int): # -> Tuple[Block, Block]:
+    def lcut_horizontal(self, y: int) -> Tuple['Block', 'Block']:
         bottom_box, top_box = self.__box.lcut_horizontal(y)
         bottom_block = Block(f'{self.__block_id}.0', bottom_box)
         top_block = Block(f'{self.__block_id}.1', top_box)
         return bottom_block, top_block
 
-    def pcut(self, x: int, y: int): # -> Tuple[Block, Block, Block, Block]:
+    def pcut(self, x: int, y: int) -> Tuple['Block', 'Block', 'Block', 'Block']:
         bottom_left_box, bottom_right_box, top_right_box, top_left_box = self.__box.pcut(x, y)
         bottom_left_block = Block(f'{self.__block_id}.0', bottom_left_box)
         bottom_right_block = Block(f'{self.__block_id}.1', bottom_right_box)
@@ -101,7 +101,7 @@ class Block:
         top_left_block = Block(f'{self.__block_id}.3', top_left_box)
         return bottom_left_block, bottom_right_block, top_right_block, top_left_block
 
-    def merge(self, block): #-> Block:
+    def merge(self, block) -> 'Block':
         pass
 
 
