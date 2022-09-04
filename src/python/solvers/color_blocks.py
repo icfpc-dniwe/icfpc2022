@@ -1,7 +1,7 @@
 import numpy as np
 import typing as t
 
-from ..moves import Color as ColorMove
+from ..moves import ColorMove as ColorMove
 from ..moves import Move
 from ..types import RGBAImage, Box, Color
 from ..box_utils import get_part, box_size

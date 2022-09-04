@@ -1,10 +1,14 @@
 from copy import copy
+from pathlib import Path
 from typing import Tuple, List, Optional, Union
 
+import cv2
 import numpy as np
 
+from python.image_utils import load_image
+from python.moves import Move, LineCut, PointCut, Merge, ColorMove
 from python.scoring import image_similarity
-from python.types import Box, RGBAImage, Color, BlockId
+from python.types import Box, RGBAImage, Color, BlockId, Orientation
 
 
 class BoxMk2:
@@ -24,7 +28,7 @@ class BoxMk2:
 
     @property
     def box(self) -> Box:
-        return np.ndarray([self.__x_min, self.__y_min, self.__x_max, self.__y_max])
+        return [self.__x_min, self.__y_min, self.__x_max, self.__y_max]
 
     def is_in(self, x: int, y: int) -> bool:
         return self.__x_min <= x < self.__x_max and self.__y_min <= y < self.__y_max
@@ -55,8 +59,8 @@ class BoxMk2:
         top_left_box = BoxMk2((self.__x_min, y, x, self.__x_max))
         return bottom_left_box, bottom_right_box, top_right_box, top_left_box
 
-    def merge(self, box_mk2): # -> BoxMk2:
-        if not self.mergable():
+    def merge(self, box_mk2: 'BoxMk2') -> 'BoxMk2':
+        if not self.mergable(box_mk2):
             raise Exception("BoxMk2s are not mergeble!")
         x_min_1, y_min_1, x_max_1, y_max_1 = self.box
         x_min_2, y_min_2, x_max_2, y_max_2 = box_mk2.box
@@ -68,10 +72,10 @@ class BoxMk2:
         ))
         return merged_box
 
-    def borders(self, box_mk2) -> bool:
+    def borders(self, box_mk2: 'BoxMk2') -> bool:
         pass
 
-    def mergable(self, box_mk2) -> bool:
+    def mergable(self, box_mk2: 'BoxMk2') -> bool:
         x_min_1, y_min_1, x_max_1, y_max_1 = self.box
         x_min_2, y_min_2, x_max_2, y_max_2 = box_mk2.box
         if (x_min_1, y_min_1, x_max_1, y_min_1) == (x_min_2, y_max_2, x_max_2, y_max_2):
@@ -130,7 +134,7 @@ class Block:
         top_left_block = Block(f'{self.__block_id}.3', top_left_box)
         return bottom_left_block, bottom_right_block, top_right_block, top_left_block
 
-    def merge(self, block, global_block_id: str) -> 'Block':
+    def merge(self, block: 'Block', global_block_id: str) -> 'Block':
         merged_box = self.__box.merge(block.box)
         merged_block = Block(f'{global_block_id}', merged_box)
         return merged_block
@@ -151,17 +155,18 @@ class State:
         self.__target_image = target_image.copy()
         self.__global_block_id = global_block_id
 
-        if self.__initial_image is None:
-            self.__initial_image = np.full_like(target_image, 255)
+        if initial_image is None:
+            # self.__initial_image = np.full_like(self.__target_image, 255)
+            self.__initial_image = np.zeros_like(self.__target_image) + 255
         else:
             self.__initial_image = initial_image.copy()
 
         if cur_image is None:
-            self.__cur_image = cur_image
-        else:
             self.__cur_image = self.__initial_image.copy()
+        else:
+            self.__cur_image = cur_image
 
-        if self.__blocks is None:
+        if blocks is None:
             w, h = self.wh
             initial_box = BoxMk2((0, 0, w, h))
             self.__blocks = [Block(self.__global_block_id, initial_box)]
@@ -207,30 +212,32 @@ class State:
         for block in self.__blocks:
             if block.block_id == block_id:
                 return block
-        raise Exception("No such block_id")
+        raise Exception(f"No such block_id {block_id}")
 
     def similarity(self) -> float:
         return image_similarity(self.__cur_image, self.__target_image)
 
-    def lcut_veritical(self, x: int, y: int) -> Tuple[BlockId, BlockId]:
+    def lcut_veritical(self, x: int, y: int) -> Tuple[Move, Tuple[BlockId, BlockId]]:
         self.validate_cut(x, y)
         block_to_cut = self.block_at(x, y)
         left_block, right_block = block_to_cut.lcut_vertical(x)
         self.__blocks.remove(block_to_cut)
         self.__blocks.append(left_block)
         self.__blocks.append(right_block)
-        return left_block.block_id, right_block.block_id
+        move = LineCut(block_to_cut.block_id, Orientation.X, x)
+        return move, (left_block.block_id, right_block.block_id)
 
-    def lcut_horizontal(self, x: int, y: int) -> Tuple[BlockId, BlockId]:
+    def lcut_horizontal(self, x: int, y: int) -> Tuple[Move, Tuple[BlockId, BlockId]]:
         self.validate_cut(x, y)
         block_to_cut = self.block_at(x, y)
         bottom_block, top_block = block_to_cut.lcut_horizontal(y)
         self.__blocks.remove(block_to_cut)
         self.__blocks.append(bottom_block)
         self.__blocks.append(top_block)
-        return bottom_block.block_id, top_block.block_id
+        move = LineCut(block_to_cut.block_id, Orientation.Y, y)
+        return move, (bottom_block.block_id, top_block.block_id)
 
-    def pcut(self, x: int, y: int) -> Tuple[BlockId, BlockId, BlockId, BlockId]:
+    def pcut(self, x: int, y: int) -> Tuple[Move, Tuple[BlockId, BlockId, BlockId, BlockId]]:
         self.validate_cut(x, y)
         block_to_cut = self.block_at(x, y)
         bottom_left_block, bottom_right_block, top_right_block, top_left_block = block_to_cut.pcut(x, y)
@@ -239,9 +246,10 @@ class State:
         self.__blocks.append(bottom_right_block)
         self.__blocks.append(top_right_block)
         self.__blocks.append(top_left_block)
-        return bottom_left_block.block_id, bottom_right_block.block_id, top_right_block.block_id, top_left_block.block_id
+        move = PointCut(block_to_cut.block_id, (x, y))
+        return move, (bottom_left_block.block_id, bottom_right_block.block_id, top_right_block.block_id, top_left_block.block_id)
 
-    def merge(self, block_id_1: BlockId, block_id_2: BlockId) -> BlockId:
+    def merge(self, block_id_1: BlockId, block_id_2: BlockId) -> Tuple[Move, Tuple[BlockId]]:
         block_1 = self.block_by_id(block_id_1)
         block_2 = self.block_by_id(block_id_2)
         merged_block = block_1.merge(block_2, str(self.__global_block_id))
@@ -249,20 +257,38 @@ class State:
         self.__blocks.remove(block_1)
         self.__blocks.remove(block_2)
         self.__blocks.append(merged_block)
-        return merged_block.block_id
+        move = Merge(block_id_1, block_id_2)
+        return move, (merged_block.block_id,)
 
     def swap(self, block_id_1: BlockId, block_id_2: BlockId):
         pass
 
-    def color(self, block_id: BlockId, color: Optional[Color]=None):
+    def color(self, block_id: BlockId, color: Optional[Color]=None) -> Tuple[Move, Tuple]:
         block = self.block_by_id(block_id)
         if color is None:
             color = block.average_color(self.__target_image)
         block.set_color(self.__cur_image, color)
-
+        move = ColorMove(block_id, color)
+        return move, ()
 
     def validate_cut(self, x: int, y: int) -> None:
         w, h = self.wh
         assert isinstance(x, int)
         assert isinstance(y, int)
         assert 0 < x < w - 1 and 0 < y < h - 1
+
+
+if __name__ == '__main__':
+    box = BoxMk2([1, 2, 3, 4])
+    x_min, y_min, x_max, y_max = box.box
+
+    problems_path = Path('../problems')
+    target_image = load_image(problems_path / f'{16}.png', revert=True)
+    state = State(target_image)
+    move_1, (bid_l, bid_r) = state.lcut_veritical(200, 1)
+    move_2, __ = state.color(bid_l)
+    move_3, (bid_m,) = state.merge(bid_l, bid_r)
+    move_4, __ = state.color(bid_m)
+
+    cv2.imshow('cur', state.cur_image())
+    cv2.waitKey(0)

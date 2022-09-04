@@ -61,7 +61,7 @@ class LineCut(Move):
         return add_line_cut_move(self.block_id, self.orientation, self.offset)
 
 
-class Color(Move):
+class ColorMove(Move):
     def __init__(self, block_id: str, color: t.Union[np.ndarray, t.Tuple[int, int, int, int]]):
         super().__init__()
         self.block_id = block_id

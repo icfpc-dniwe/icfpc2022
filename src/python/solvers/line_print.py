@@ -6,7 +6,7 @@ import typing as t
 
 from ..image_utils import load_image
 from ..types import RGBAImage, Box, Program, Orientation
-from ..moves import LineCut, PointCut, Merge, Color, Move
+from ..moves import LineCut, PointCut, Merge, ColorMove, Move
 
 
 def render_by_line(img: RGBAImage) -> t.Tuple[RGBAImage, t.List[Move]]:
@@ -51,7 +51,7 @@ def render_by_line(img: RGBAImage) -> t.Tuple[RGBAImage, t.List[Move]]:
                     # continue cutting
                     cur_prefix = cur_columns.pop()
                 new_canvas[cv_line:, cur_x:] = img[cv_line, cur_x]
-                program.append(Color(f'{cur_prefix}', img[cv_line, cur_x]))
+                program.append(ColorMove(f'{cur_prefix}', img[cv_line, cur_x]))
                 if cur_x + 1 < w:
                     program.append(LineCut(f'{cur_prefix}', Orientation.X, cur_x + 1))
                     cur_columns += [f'{cur_prefix}.0', f'{cur_prefix}.1']

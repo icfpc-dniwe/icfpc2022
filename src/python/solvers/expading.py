@@ -9,7 +9,7 @@ from .straight import render_straight
 from ..mosaic.fill import expand_pixel
 from ..scoring import block_similarity, image_similarity, static_cost
 from ..box_utils import box_size, get_part
-from ..moves import Color as ColorMove
+from ..moves import ColorMove as ColorMove
 from ..types import RGBAImage, Box, Color, Program
 
 

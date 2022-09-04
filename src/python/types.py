@@ -8,7 +8,7 @@ LabelImage = np.ndarray  # HxW matrix of labels (np.int32)
 Box = t.Union[np.ndarray, t.Tuple[int, int, int, int]]  # bounding box in (x_min, y_min, x_max, y_max) format
 Program = t.Sequence[str]
 Color = t.Union[np.ndarray, t.Tuple[int, int, int, int]]  # RGBA color
-BlockId: str
+BlockId = str
 
 
 class Orientation(Enum):

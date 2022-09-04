@@ -3,7 +3,7 @@ import cv2
 from enum import Enum, auto
 import typing as t
 
-from ..moves import Color
+from ..moves import ColorMove
 from ..scoring import static_cost, block_similarity
 from ..image_utils import get_area
 from ..box_utils import box_size, get_part
