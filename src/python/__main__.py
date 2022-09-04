@@ -50,7 +50,7 @@ def test_run(problem_num: int):
 
 def main_run(problem_path: Path, output_path: Path):
     img = load_image(problem_path, revert=True)
-    canvas, prog = produce_program(img, num_random_starts=10)
+    canvas, prog = produce_program(img, num_random_starts=10, num_random_points=50)
     with output_path.open('w') as f:
         print('\n'.join(prog), file=f)
 

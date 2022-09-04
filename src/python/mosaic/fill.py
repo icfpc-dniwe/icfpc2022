@@ -57,12 +57,7 @@ def expand_pixel(
         tol: float = 1,
         min_block_area: int = 9
 ) -> t.Optional[Box]:
-    # canvas_area = get_area(img)
     bbox = np.array([point[0], point[1], point[0] + 1, point[1] + 1], dtype=np.int64)
-    # cur_orientation = ExpandOrientation.Top
-
-    # def color_cost(block_area):
-    #     return static_cost(Color, block_area, canvas_area)
 
     def can_expand(orientation: ExpandOrientation) -> bool:
         if orientation is ExpandOrientation.Top and bbox[3] >= canvas_height:
@@ -82,17 +77,8 @@ def expand_pixel(
         return None
 
     all_orientations = ExpandOrientation.get_all()
-    # iter = -1
     cur_cost = None
     while True:
-        # iter += 1
-        # print('Iter', iter, '|>', box_size(bbox))
-        # old_orientation = cur_orientation
-        # cur_orientation = cur_orientation.next()
-        # while (not try_expand(cur_orientation)) and (cur_orientation is not old_orientation):
-        #     cur_orientation = cur_orientation.next()
-        # if cur_orientation is old_orientation:
-        #     break
         costs = list(filter(lambda x: x[1] is not None, enumerate(map(try_expand, all_orientations))))
         if len(costs) < 1:
             break
@@ -104,14 +90,9 @@ def expand_pixel(
                 cur_cost = costs[cost_idx][1]
             else:
                 break
-        # print('Iter', iter, '|=', costs[cost_idx][1])
         cur_orientation = all_orientations[costs[cost_idx][0]]
         bbox = expand(bbox, cur_orientation)
     if box_size(bbox) < min_block_area:
         return None
     else:
         return bbox
-
-
-def process_image(img: RGBAImage) -> t.Tuple[LabelImage, t.Dict[int, Color]]:
-    pass
