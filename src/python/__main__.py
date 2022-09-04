@@ -53,7 +53,8 @@ def test_run(problem_num: int):
 def main_run(problem_num: int, output_path: Path):
     problem_path = Path('../problems/') / f'{problem_num}.png'
     img = load_image(problem_path, revert=True)
-    canvas, prog = produce_program(img, num_random_starts=10, num_random_points=50)
+    canvas, moves = produce_program(img, num_random_starts=10, num_random_points=50)
+    prog = get_program(moves)
     with output_path.open('w') as f:
         print('\n'.join(prog), file=f)
 

@@ -103,5 +103,17 @@ class Merge(Move):
         return add_merge_move(self.left_block_id, self.right_block_id)
 
 
+class EmptyMove(Move):
+    def __init__(self):
+        super().__init__()
+
+    @staticmethod
+    def cost() -> int:
+        return 0
+
+    def program(self) -> str:
+        return '# nothing to do here'
+
+
 def get_program(moves: t.Iterable[Move]) -> Program:
     return list(map(lambda m: m.program(), moves))

@@ -6,18 +6,24 @@ import typing as t
 
 from ..image_utils import load_image
 from ..types import RGBAImage, Box, Program, Color, Orientation
-from ..moves import add_merge_move, add_color_move, add_point_cut_move, add_line_cut_move
+from ..moves import Move, PointCut, LineCut, Merge, ColorMove
 
 
 # TODO box with 0 coordinate does not render
 def render_straight(
         source_img: RGBAImage,
         boxes: t.Sequence[Box],
-        colors: t.Optional[t.Sequence[Color]] = None
-) -> t.Tuple[RGBAImage, Program]:
-    canvas = np.zeros_like(source_img) + 255
+        colors: t.Optional[t.Sequence[Color]] = None,
+        canvas: t.Optional[RGBAImage] = None,
+        global_block_id: int = 0,
+        block_prefix: t.Optional[str] = None
+) -> t.Tuple[RGBAImage, t.List[Move]]:
+    if canvas is None:
+        canvas = np.zeros_like(source_img) + 255
     h, w = canvas.shape[:2]
-    global_block_id = 0
+    # global_block_id = 0
+    if block_prefix is None:
+        block_prefix = f'{global_block_id}'
 
     def render_box(cur_box: Box, color: t.Optional[Color] = None) -> np.ndarray:
         x_min, y_min, x_max, y_max = cur_box
@@ -28,39 +34,36 @@ def render_straight(
         canvas[y_min:y_max, x_min:x_max] = color
         return color
 
-    def get_program_pcut(cur_box: Box, color: np.ndarray) -> t.List[str]:
+    def get_program_pcut(cur_box: Box, color: np.ndarray, cur_prefix: str) -> t.List[Move]:
         x_min, y_min, x_max, y_max = cur_box
-        cur_prog = [
-            add_point_cut_move(f'{global_block_id}', (x_min, y_min)),
-            add_point_cut_move(f'{global_block_id}.2', (x_max, y_max)),
-        ]
-        cur_prog += [
-            add_color_move(f'{global_block_id}.2.0', color)
-        ]
-        return cur_prog
-
-    def merge_back_pcut() -> t.List[str]:
         return [
-            add_merge_move(f'{global_block_id}.2.2', f'{global_block_id}.2.3'),
-            add_merge_move(f'{global_block_id}.2.0', f'{global_block_id}.2.1'),
-            add_merge_move(f'{global_block_id + 1}', f'{global_block_id + 2}'),
-
-            add_merge_move(f'{global_block_id}.0', f'{global_block_id}.1'),
-            add_merge_move(f'{global_block_id}.3', f'{global_block_id + 3}'),
-            add_merge_move(f'{global_block_id + 4}', f'{global_block_id + 5}'),
+            PointCut(f'{cur_prefix}', (x_min, y_min)),
+            PointCut(f'{cur_prefix}.2', (x_max, y_max)),
+            ColorMove(f'{cur_prefix}.2.0', color)
         ]
 
-    def get_program_corner_cut(prefix: str, point: t.Tuple[int, int], block_postfix: int, color: Color) -> Program:
+    def merge_back_pcut(cur_prefix: str) -> t.List[Move]:
         return [
-            add_point_cut_move(f'{prefix}', point),
-            add_color_move(f'{prefix}.{block_postfix}', color)
+            Merge(f'{cur_prefix}.2.2', f'{cur_prefix}.2.3'),
+            Merge(f'{cur_prefix}.2.0', f'{cur_prefix}.2.1'),
+            Merge(f'{global_block_id + 1}', f'{global_block_id + 2}'),
+
+            Merge(f'{cur_prefix}.0', f'{cur_prefix}.1'),
+            Merge(f'{cur_prefix}.3', f'{global_block_id + 3}'),
+            Merge(f'{global_block_id + 4}', f'{global_block_id + 5}'),
         ]
 
-    def merge_corner_cut(block_id: int) -> Program:
+    def get_program_corner_cut(prefix: str, point: t.Tuple[int, int], block_postfix: int, color: Color) -> t.List[Move]:
         return [
-            add_merge_move(f'{block_id}.0', f'{block_id}.1'),
-            add_merge_move(f'{block_id}.2', f'{block_id}.3'),
-            add_merge_move(f'{block_id + 1}', f'{block_id + 2}')
+            PointCut(f'{prefix}', point),
+            ColorMove(f'{prefix}.{block_postfix}', color)
+        ]
+
+    def merge_corner_cut(block_id: int) -> t.List[Move]:
+        return [
+            Merge(f'{block_id}.0', f'{block_id}.1'),
+            Merge(f'{block_id}.2', f'{block_id}.3'),
+            Merge(f'{block_id + 1}', f'{block_id + 2}')
         ]
 
     def get_program_linear_cut(cur_box: Box, color: np.ndarray, last_box: bool = False) -> t.Tuple[Program, int]:
@@ -112,13 +115,15 @@ def render_straight(
         else:
             cur_color = render_box(cur_box, colors[i])
         if use_point_cut(cur_box):
-            cur_prog = get_program_pcut(cur_box, cur_color)
+            cur_prog = get_program_pcut(cur_box, cur_color, block_prefix)
             whole_prog += cur_prog
 
             if i < len(boxes)-1:
-                whole_prog += merge_back_pcut()
+                whole_prog += merge_back_pcut(block_prefix)
                 global_block_id += 6
+                block_prefix = f'{global_block_id}'
         else:
+            raise NotImplementedError
             cur_prog, addition = get_program_linear_cut(cur_box, cur_color, last_box=i < len(boxes)-1)
             whole_prog += cur_prog
             global_block_id += addition

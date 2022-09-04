@@ -9,7 +9,7 @@ from .straight import render_straight
 from ..mosaic.fill import expand_pixel
 from ..scoring import block_similarity, image_similarity, static_cost
 from ..box_utils import box_size, get_part
-from ..moves import ColorMove as ColorMove
+from ..moves import ColorMove, Move, EmptyMove
 from ..types import RGBAImage, Box, Color, Program
 
 
@@ -70,11 +70,21 @@ def get_boxes(
     return list(zip(boxes, colors)), total_score
 
 
+def filter_unneeded_boxes(boxes: t.Sequence[t.Tuple[Box, t.Any]], height: int, width: int) -> t.List[t.Tuple[Box, t.Any]]:
+    new_boxes = []
+    canvas = np.zeros((height, width), dtype=np.uint8)
+    for cur_box, other in reversed(boxes):
+        if np.any(canvas[cur_box[1]:cur_box[3], cur_box[0]:cur_box[2]] == 0):
+            new_boxes.append((cur_box, other))
+            canvas[cur_box[1]:cur_box[3], cur_box[0]:cur_box[2]] = 255
+    return new_boxes
+
+
 def produce_program(
         img: RGBAImage,
         num_random_starts: int = 0,
         num_random_points: int = 1000
-) -> t.Tuple[RGBAImage, Program]:
+) -> t.Tuple[RGBAImage, t.List[Move]]:
     h, w = img.shape[:2]
     starting_points = list(product(range(0, w, 8), range(0, h, 8)))
     results, score = get_boxes(img, starting_points)
@@ -91,8 +101,9 @@ def produce_program(
     print('Top Score:', top_score)
     print('Num boxes:', len(top_results))
     if len(top_results) < 1:
-        return img, ['# nothing to do here']
-    boxes, colors = unzip(top_results)
+        return img, [EmptyMove()]
+    results = filter_unneeded_boxes(top_results, h, w)
+    boxes, colors = unzip(results)
     new_boxes = []
     for cur_box in boxes:
         if cur_box[0] == 0:
