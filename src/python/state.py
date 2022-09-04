@@ -223,6 +223,6 @@ class State:
 
     def validate_cut(self, x: int, y: int) -> None:
         w, h = self.wh
-        assert isinstance(x ,int)
-        assert isinstance(y ,int)
-        assert x > 0 and y > 0 and x < w-1 and y < h-1
+        assert isinstance(x, int)
+        assert isinstance(y, int)
+        assert 0 < x < w - 1 and 0 < y < h - 1
