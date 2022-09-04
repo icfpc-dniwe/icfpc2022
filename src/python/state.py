@@ -27,7 +27,7 @@ class BoxMk2:
         return np.ndarray([self.__x_min, self.__y_min, self.__x_max, self.__y_max])
 
     def is_in(self, x: int, y: int) -> bool:
-        return x >= self.__x_min and y >= self.__y_min and x < self.__x_max and y < self.__y_max
+        return self.__x_min <= x < self.__x_max and self.__y_min <= y < self.__y_max
 
     def image_part(self, img: RGBAImage) -> RGBAImage:
         return img[self.__y_min:self.__y_max, self.__x_min:self.__x_max]
