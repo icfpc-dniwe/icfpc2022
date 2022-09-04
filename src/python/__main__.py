@@ -12,7 +12,7 @@ from .moves import get_program
 from .box_utils import box_wh, box_size
 
 
-def blocks_run(problem_num: int):
+def blocks_run(problem_num: int, output_path: Path):
     problems_path = Path('../problems')
     img = load_image(problems_path / f'{problem_num}.png', revert=True)
     with (problems_path / f'{problem_num}.initial.json').open('r') as f:
@@ -20,7 +20,9 @@ def blocks_run(problem_num: int):
     blocks_info = canvas_info['blocks']
     moves = color_blocks.produce_program(img, blocks_info)
     prog = get_program(moves)
-    with open('test_prog.txt', 'w') as f:
+    # with open('test_prog.txt', 'w') as f:
+    #     print('\n'.join(prog), file=f)
+    with output_path.open('w') as f:
         print('\n'.join(prog), file=f)
 
 
@@ -48,7 +50,8 @@ def test_run(problem_num: int):
         print('\n'.join(prog), file=f)
 
 
-def main_run(problem_path: Path, output_path: Path):
+def main_run(problem_num: int, output_path: Path):
+    problem_path = Path('../problems/') / f'{problem_num}.png'
     img = load_image(problem_path, revert=True)
     canvas, prog = produce_program(img, num_random_starts=10, num_random_points=50)
     with output_path.open('w') as f:
@@ -62,17 +65,16 @@ def main_run(problem_path: Path, output_path: Path):
               type=click.Choice(['main', 'test', 'blocks'], case_sensitive=False),
               help='Service name')
 def main(problem_num: int, output_path: Path, run_type: str):
-    problem_path = f'../problems/{problem_num}.png'
 
     if run_type == 'test':
         print('test')
         test_run(problem_num)
     elif run_type == 'blocks':
         print('blocks')
-        blocks_run(problem_num)
+        blocks_run(problem_num, output_path)
     else:
         print('main')
-        main_run(problem_path, output_path)
+        main_run(problem_num, output_path)
 
 
 if __name__ == '__main__':

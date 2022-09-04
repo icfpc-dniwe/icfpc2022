@@ -42,6 +42,7 @@ def get_boxes(
 ) -> t.Tuple[t.List[t.Tuple[Box, Color]], float]:
     h, w = img.shape[:2]
     real_canvas_area = h * w
+    move_lambda = 2
     # r_img = cv2.resize(img, (50, 50))
     # r_h, r_w = r_img.shape[:2]
     real_rendered_canvas = np.zeros_like(img) + 255
@@ -50,7 +51,7 @@ def get_boxes(
     for cur_x, cur_y in tqdm(starting_points):
         cur_color = img[cur_y, cur_x]
         cur_scorring = lambda box: expand_cost_fn(img, real_rendered_canvas, cur_color, box,
-                                                  real_canvas_area)
+                                                  real_canvas_area, move_lambda)
         new_box = expand_pixel((cur_x, cur_y), h, w, cur_scorring)
         if new_box is not None:
             score = cur_scorring(new_box)
