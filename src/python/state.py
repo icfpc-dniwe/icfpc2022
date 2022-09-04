@@ -3,8 +3,8 @@ from typing import Tuple, List, Optional, Union
 
 import numpy as np
 
-from .scoring import image_similarity
-from .types import Box, RGBAImage, Color
+from python.scoring import image_similarity
+from python.types import Box, RGBAImage, Color, BlockId
 
 
 class BoxMk2:
@@ -55,14 +55,43 @@ class BoxMk2:
         top_left_box = BoxMk2((self.__x_min, y, x, self.__x_max))
         return bottom_left_box, bottom_right_box, top_right_box, top_left_box
 
+    def merge(self, box_mk2): # -> BoxMk2:
+        if not self.mergable():
+            raise Exception("BoxMk2s are not mergeble!")
+        x_min_1, y_min_1, x_max_1, y_max_1 = self.box
+        x_min_2, y_min_2, x_max_2, y_max_2 = box_mk2.box
+        merged_box = BoxMk2((
+            min(x_min_1, x_min_2),
+            min(y_min_1, y_min_2),
+            max(x_max_1, x_max_2),
+            max(y_max_1, y_max_2),
+        ))
+        return merged_box
+
+    def borders(self, box_mk2) -> bool:
+        pass
+
+    def mergable(self, box_mk2) -> bool:
+        x_min_1, y_min_1, x_max_1, y_max_1 = self.box
+        x_min_2, y_min_2, x_max_2, y_max_2 = box_mk2.box
+        if (x_min_1, y_min_1, x_max_1, y_min_1) == (x_min_2, y_max_2, x_max_2, y_max_2):
+            return True
+        if (x_min_2, y_min_2, x_max_2, y_min_2) == (x_min_1, y_max_1, x_max_1, y_max_1):
+            return True
+        if (x_min_1, y_min_1, x_min_1, y_max_1) == (x_max_2, y_min_2, x_max_2, y_max_2):
+            return True
+        if (x_min_2, y_min_2, x_min_2, y_max_2) == (x_max_1, y_min_1, x_max_1, y_max_1):
+            return True
+        return False
+
 
 class Block:
-    def __init__(self, block_id: Union[str, int], box: BoxMk2):
+    def __init__(self, block_id: Union[BlockId, int], box: BoxMk2):
         self.__block_id = str(block_id)
         self.__box = box
 
     @property
-    def block_id(self) -> str:
+    def block_id(self) -> BlockId:
         return self.__block_id
 
     @property
@@ -101,8 +130,10 @@ class Block:
         top_left_block = Block(f'{self.__block_id}.3', top_left_box)
         return bottom_left_block, bottom_right_block, top_right_block, top_left_block
 
-    def merge(self, block) -> 'Block':
-        pass
+    def merge(self, block, global_block_id: str) -> 'Block'':
+        merged_box = self.__box.merge(block.box)
+        merged_block = Block(f'{global_block_id}', merged_box)
+        return merged_block
 
 
 def parse_blocks(text: str) -> List[Block]:
@@ -172,7 +203,7 @@ class State:
                 return block
         raise Exception("Blocks are corrupt!!!")
 
-    def block_by_id(self, block_id: str) -> Block:
+    def block_by_id(self, block_id: BlockId) -> Block:
         for block in self.__blocks:
             if block.block_id == block_id:
                 return block
@@ -181,23 +212,25 @@ class State:
     def similarity(self) -> float:
         return image_similarity(self.__cur_image, self.__target_image)
 
-    def lcut_veritical(self, x: int, y: int):
+    def lcut_veritical(self, x: int, y: int) -> Tuple[BlockId, BlockId]:
         self.validate_cut(x, y)
         block_to_cut = self.block_at(x, y)
         left_block, right_block = block_to_cut.lcut_vertical(x)
         self.__blocks.remove(block_to_cut)
         self.__blocks.append(left_block)
         self.__blocks.append(right_block)
+        return left_block.block_id, right_block.block_id
 
-    def lcut_horizontal(self, x: int, y: int):
+    def lcut_horizontal(self, x: int, y: int) -> Tuple[BlockId, BlockId]:
         self.validate_cut(x, y)
         block_to_cut = self.block_at(x, y)
         bottom_block, top_block = block_to_cut.lcut_horizontal(y)
         self.__blocks.remove(block_to_cut)
         self.__blocks.append(bottom_block)
         self.__blocks.append(top_block)
+        return bottom_block.block_id, top_block.block_id
 
-    def pcut(self, x: int, y: int):
+    def pcut(self, x: int, y: int) -> Tuple[BlockId, BlockId, BlockId, BlockId]:
         self.validate_cut(x, y)
         block_to_cut = self.block_at(x, y)
         bottom_left_block, bottom_right_block, top_right_block, top_left_block = block_to_cut.pcut(x, y)
@@ -206,20 +239,27 @@ class State:
         self.__blocks.append(bottom_right_block)
         self.__blocks.append(top_right_block)
         self.__blocks.append(top_left_block)
+        return bottom_left_block.block_id, bottom_right_block.block_id, top_right_block.block_id, top_left_block.block_id
 
-    def merge(self, block_id_1: str, block_id_2: str):
+    def merge(self, block_id_1: BlockId, block_id_2: BlockId) -> BlockId:
         block_1 = self.block_by_id(block_id_1)
         block_2 = self.block_by_id(block_id_2)
-        merged_block = block_1.merge(block_2)
+        merged_block = block_1.merge(block_2, str(self.__global_block_id))
+        self.__global_block_id += 1
         self.__blocks.remove(block_1)
         self.__blocks.remove(block_2)
         self.__blocks.append(merged_block)
+        return merged_block.block_id
 
-    def swap(self, block_id_1: str, block_id_2: str):
+    def swap(self, block_id_1: BlockId, block_id_2: BlockId):
         pass
 
-    def color(self, block_id: str):
-        pass
+    def color(self, block_id: BlockId, color: Optional[Color]=None):
+        block = self.block_by_id(block_id)
+        if color is None:
+            color = block.average_color(self.__target_image)
+        block.set_color(self.__cur_image, color)
+
 
     def validate_cut(self, x: int, y: int) -> None:
         w, h = self.wh
