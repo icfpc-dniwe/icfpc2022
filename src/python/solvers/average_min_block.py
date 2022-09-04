@@ -10,7 +10,6 @@ from ..moves import add_point_cut_move, add_color_move
 from ..types import RGBAImage, Program, Box
 
 
-# TODO debug
 def solve_by_splitting_evenly_and_coloring_each_block_by_its_average_color(source_img: RGBAImage, block_max_size: int) -> t.Tuple[RGBAImage, Program]:
     canvas = np.zeros_like(source_img)
     whole_prog = []

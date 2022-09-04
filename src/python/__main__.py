@@ -12,10 +12,10 @@ from .moves import get_program
 from .box_utils import box_wh, box_size
 
 
-def blocks_run():
+def blocks_run(problem_num: int):
     problems_path = Path('../problems')
-    img = load_image(problems_path / '30.png', revert=True)
-    with (problems_path / '30.initial.json').open('r') as f:
+    img = load_image(problems_path / f'{problem_num}.png', revert=True)
+    with (problems_path / f'{problem_num}.initial.json').open('r') as f:
         canvas_info = json.load(f)
     blocks_info = canvas_info['blocks']
     moves = color_blocks.produce_program(img, blocks_info)
@@ -24,9 +24,9 @@ def blocks_run():
         print('\n'.join(prog), file=f)
 
 
-def test_run():
+def test_run(problem_num: int):
     problems_path = Path('../problems')
-    img = load_image(problems_path / '2.png', revert=True)
+    img = load_image(problems_path / f'{problem_num}.png', revert=True)
     # boxes = collect_boxes(img)
     # boxes = list(filter(lambda b: box_size(b) > 9 and min(box_wh(b)) > 2, boxes))
     # print(boxes)
@@ -48,9 +48,6 @@ def test_run():
         print('\n'.join(prog), file=f)
 
 
-@click.command()
-@click.option('-p', '--problem-path', type=Path)
-@click.option('-o', '--output-path', type=Path)
 def main_run(problem_path: Path, output_path: Path):
     img = load_image(problem_path, revert=True)
     canvas, prog = produce_program(img, num_random_starts=10)
@@ -58,5 +55,25 @@ def main_run(problem_path: Path, output_path: Path):
         print('\n'.join(prog), file=f)
 
 
+@click.command()
+@click.option('-p', '--problem-num', type=int)
+@click.option('-o', '--output-path', type=Path)
+@click.option('-r', '--run-type',
+              type=click.Choice(['main', 'test', 'blocks'], case_sensitive=False),
+              help='Service name')
+def main(problem_num: int, output_path: Path, run_type: str):
+    problem_path = f'../problems/{problem_num}.png'
+
+    if run_type == 'test':
+        print('test')
+        test_run(problem_num)
+    elif run_type == 'blocks':
+        print('blocks')
+        blocks_run(problem_num)
+    else:
+        print('main')
+        main_run(problem_path, output_path)
+
+
 if __name__ == '__main__':
-    main_run()
+    main()
