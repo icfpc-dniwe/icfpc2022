@@ -56,7 +56,7 @@ class BoxMk2:
         bottom_left_box = BoxMk2((self.__x_min, self.__y_min, x, y))
         bottom_right_box = BoxMk2((x, self.__y_min, self.__x_max, y))
         top_right_box = BoxMk2((x, y, self.__x_max, self.__y_max))
-        top_left_box = BoxMk2((self.__x_min, y, x, self.__x_max))
+        top_left_box = BoxMk2((self.__x_min, y, x, self.__y_max))
         return bottom_left_box, bottom_right_box, top_right_box, top_left_box
 
     def merge(self, box_mk2: 'BoxMk2') -> 'BoxMk2':
@@ -298,6 +298,86 @@ class State:
         assert isinstance(y, int)
         assert 0 < x < w - 1 and 0 < y < h - 1
 
+    def color_rect_and_remerge(self, box: Union[Box, BoxMk2], color: Optional[Color] = None) -> Tuple[List[Move], Tuple[BlockId]]:
+        if not isinstance(box, BoxMk2):
+            box = BoxMk2(box)
+
+        x_min, y_min, x_max, y_max = box.box
+        w, h = self.wh
+        moves = []
+        block_1 = self.block_at(x_min, y_min)
+        block_2 = self.block_at(x_max-1, y_max-1)
+
+        if block_1.box.box == box.box:
+            self.color(block_1.block_id, color)
+
+        elif block_1.block_id == block_2.block_id:
+            if x_min == 0 and y_min == 0:
+                move_1, (bl_bid, br_bid, tr_bid, tl_bid) = state.pcut(x_max, y_max)
+                move_2, __ = state.color(tl_bid, color)
+                move_3, (m1_bid,) = state.merge(bl_bid, br_bid)
+                move_4, (m2_bid,) = state.merge(tr_bid, tl_bid)
+                move_5, (last_bid,) = state.merge(m1_bid, m2_bid)
+                moves += [move_1, move_2, move_3, move_4, move_5]
+
+            elif x_max == w and y_min == 0:
+                raise NotImplementedError
+
+            elif x_max == w and y_max == h:
+                raise NotImplementedError
+
+            elif x_min == 0 and y_max == h:
+                raise NotImplementedError
+
+            elif x_min == 0 and x_max == w:
+                raise NotImplementedError
+
+            elif y_min == 0 and y_max == h:
+                raise NotImplementedError
+
+            elif x_min == 0:
+                move_1, (bl_bid, br_bid, tr_bid, tl_bid) = state.pcut(x_max, y_min)
+                move_2, (bottom_bid, top_bid) = state.lcut_horizontal(1, y_max)
+                move_3, __ = state.color(bottom_bid, color)
+                move_4, (m1_bid,) = state.merge(bottom_bid, top_bid)
+                move_5, (m2_bid,) = state.merge(m1_bid, tr_bid)
+                move_6, (m3_bid,) = state.merge(tr_bid, tl_bid)
+                move_7, (last_bid,) = state.merge(m2_bid, m3_bid)
+                moves += [move_1, move_2, move_3, move_4, move_5, move_6, move_7]
+
+            elif y_min == 0:
+                raise NotImplementedError
+
+            elif x_max == w:
+                raise NotImplementedError
+
+            elif y_max == h:
+                move_1, (bl_bid, br_bid, tr_bid, tl_bid) = state.pcut(x_min, y_max)
+                move_2, (left_bid, right_bid) = state.lcut_veritical(x_min, 1)
+                move_3, __ = state.color(right_bid, color)
+                move_4, (m1_bid,) = state.merge(left_bid, right_bid)
+                move_5, (m2_bid,) = state.merge(m1_bid, tr_bid)
+                move_6, (m3_bid,) = state.merge(tr_bid, tl_bid)
+                move_7, (last_bid,) = state.merge(m2_bid, m3_bid)
+                moves += [move_1, move_2, move_3, move_4, move_5, move_6, move_7]
+
+            else:
+                move_1, (bl_bid_1, br_bid_1, tr_bid_1, tl_bid_1) = state.pcut(x_min, y_max)
+                move_2, (bl_bid_2, br_bid_2, tr_bid_2, tl_bid_2) = state.pcut(x_max, y_min)
+                move_3, __ = state.color(tl_bid_2, color)
+                move_4, (m1_bid,) = state.merge(bl_bid_2, br_bid_2)
+                move_5, (m2_bid,) = state.merge(tl_bid_2, tr_bid_2)
+                move_6, (m3_bid,) = state.merge(m1_bid, m2_bid)
+                move_7, (m4_bid,) = state.merge(m3_bid, bl_bid_1)
+                move_8, (m5_bid,) = state.merge(tl_bid_1, tr_bid_1)
+                move_9, (last_bid,) = state.merge(m4_bid, m5_bid)
+                moves += [move_1, move_2, move_3, move_4, move_5, move_6, move_7, move_8, move_9]
+
+        else:
+            raise NotImplementedError
+
+        return moves, (last_bid,)
+
 
 if __name__ == '__main__':
     box = BoxMk2([1, 2, 3, 4])
@@ -305,15 +385,19 @@ if __name__ == '__main__':
 
     problems_path = Path('../problems')
     target_image = load_image(problems_path / f'{16}.png', revert=True)
+
+    # state = State(target_image)
+    # move_1, (bid_l, bid_r) = state.lcut_veritical(200, 1)
+    # move_2, __ = state.color(bid_l)
+    # move_3, (bid_m,) = state.merge(bid_l, bid_r)
+    # move_4, __ = state.color(bid_m)
+    # move_5, (bl_bid, br_bid, tr_bid, tl_bid) = state.pcut(30, 150)
+    # move_6, __ = state.color(bl_bid)
+    # move_7, __ = state.color(br_bid)
+    # move_8, __ = state.color(tr_bid)
+
     state = State(target_image)
-    move_1, (bid_l, bid_r) = state.lcut_veritical(200, 1)
-    move_2, __ = state.color(bid_l)
-    move_3, (bid_m,) = state.merge(bid_l, bid_r)
-    move_4, __ = state.color(bid_m)
-    move_5, (bl_bid, br_bid, tr_bid, tl_bid) = state.pcut(30, 150)
-    move_6, __ = state.color(bl_bid)
-    move_7, __ = state.color(br_bid)
-    move_8, __ = state.color(tr_bid)
+    moves, main_bid = state.color_rect_and_remerge([40, 120, 100, 350])
 
     cv2.imshow('cur', state.cur_image())
     cv2.waitKey(0)
