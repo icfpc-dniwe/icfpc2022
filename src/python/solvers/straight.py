@@ -4,6 +4,7 @@ import cv2
 import numpy as np
 import typing as t
 
+from ..box_utils import box_size
 from ..image_utils import load_image
 from ..types import RGBAImage, Box, Program, Color, Orientation
 from ..moves import Move, PointCut, LineCut, Merge, ColorMove
@@ -21,6 +22,7 @@ def render_straight(
     if canvas is None:
         canvas = np.zeros_like(source_img) + 255
     h, w = canvas.shape[:2]
+    img_size = h * w
     # global_block_id = 0
     if block_prefix is None:
         block_prefix = f'{global_block_id}'
@@ -37,20 +39,27 @@ def render_straight(
     def get_program_pcut(cur_box: Box, color: np.ndarray, cur_prefix: str) -> t.List[Move]:
         x_min, y_min, x_max, y_max = cur_box
         return [
-            PointCut(f'{cur_prefix}', (x_min, y_min)),
-            PointCut(f'{cur_prefix}.2', (x_max, y_max)),
-            ColorMove(f'{cur_prefix}.2.0', color)
+            PointCut(f'{cur_prefix}', (x_min, y_min), block_size=img_size),
+            PointCut(f'{cur_prefix}.2', (x_max, y_max), block_size=box_size((x_min, y_min, w, h))),
+            ColorMove(f'{cur_prefix}.2.0', color, block_size=box_size(cur_box))
         ]
 
-    def merge_back_pcut(cur_prefix: str) -> t.List[Move]:
+    def merge_back_pcut(cur_prefix: str, cur_box: Box) -> t.List[Move]:
+        x_min, y_min, x_max, y_max = cur_box
         return [
-            Merge(f'{cur_prefix}.2.2', f'{cur_prefix}.2.3'),
-            Merge(f'{cur_prefix}.2.0', f'{cur_prefix}.2.1'),
-            Merge(f'{global_block_id + 1}', f'{global_block_id + 2}'),
+            Merge(f'{cur_prefix}.2.2', f'{cur_prefix}.2.3',
+                  block_size=max(box_size((x_max, y_max, w, h)), box_size((x_min, y_max, x_max, h)))),
+            Merge(f'{cur_prefix}.2.0', f'{cur_prefix}.2.1',
+                  block_size=max(box_size(cur_box), box_size((x_max, y_min, w, y_max)))),
+            Merge(f'{global_block_id + 1}', f'{global_block_id + 2}',
+                  block_size=max(box_size((x_min, y_min, w, y_max)), box_size((x_min, y_max, w, h)))),
 
-            Merge(f'{cur_prefix}.0', f'{cur_prefix}.1'),
-            Merge(f'{cur_prefix}.3', f'{global_block_id + 3}'),
-            Merge(f'{global_block_id + 4}', f'{global_block_id + 5}'),
+            Merge(f'{cur_prefix}.0', f'{cur_prefix}.1',
+                  block_size=max(box_size((0, 0, x_min, y_min)), box_size((x_min, 0, w, y_min)))),
+            Merge(f'{cur_prefix}.3', f'{global_block_id + 3}',
+                  block_size=max(box_size((0, y_min, x_min, h)), box_size((x_min, y_min, w, h)))),
+            Merge(f'{global_block_id + 4}', f'{global_block_id + 5}',
+                  block_size=max(box_size((0, 0, w, y_min)), box_size((0, y_min, w, y_max)))),
         ]
 
     def get_program_corner_cut(prefix: str, point: t.Tuple[int, int], block_postfix: int, color: Color) -> t.List[Move]:
@@ -119,7 +128,7 @@ def render_straight(
             whole_prog += cur_prog
 
             if i < len(boxes)-1:
-                whole_prog += merge_back_pcut(block_prefix)
+                whole_prog += merge_back_pcut(block_prefix, cur_box)
                 global_block_id += 6
                 block_prefix = f'{global_block_id}'
         else:

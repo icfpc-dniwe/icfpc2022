@@ -1,6 +1,8 @@
 import click
 import json
 from pathlib import Path
+
+import numpy as np
 from matplotlib import pyplot as plt
 from .image_utils import load_image, collect_boxes, allgomerative_image, get_colored_img
 from .types import Orientation
@@ -9,6 +11,7 @@ from .solvers.expading import produce_program
 from .solvers.line_print import render_by_line
 from .solvers import color_blocks
 from .moves import get_program
+from .scoring import score_program_agaist_nothing
 from .box_utils import box_wh, box_size
 
 
@@ -54,6 +57,9 @@ def main_run(problem_num: int, output_path: Path):
     problem_path = Path('../problems/') / f'{problem_num}.png'
     img = load_image(problem_path, revert=True)
     canvas, moves = produce_program(img, num_random_starts=10, num_random_points=50)
+    old_canvas = np.zeros_like(img) + 255
+    do_nothing, do_prog = score_program_agaist_nothing(img, old_canvas, canvas, (0, 0, 400, 400), moves)
+    print('Final scores:', do_nothing, do_prog)
     prog = get_program(moves)
     with output_path.open('w') as f:
         print('\n'.join(prog), file=f)

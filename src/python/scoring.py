@@ -1,9 +1,9 @@
 import numpy as np
 import typing as t
 
-from .box_utils import get_part, box_size
+from .box_utils import box_size
 from .types import RGBAImage, Color, Box
-from .moves import Move, ColorMove, get_block_size
+from .moves import Move, get_block_size
 
 
 def relative_static_cost(move: t.Union[Move, t.Type[Move]], block_area: int) -> float:
