@@ -77,7 +77,7 @@ def filter_unneeded_boxes(boxes: t.Sequence[t.Tuple[Box, t.Any]], height: int, w
         if np.any(canvas[cur_box[1]:cur_box[3], cur_box[0]:cur_box[2]] == 0):
             new_boxes.append((cur_box, other))
             canvas[cur_box[1]:cur_box[3], cur_box[0]:cur_box[2]] = 255
-    return new_boxes
+    return list(reversed(new_boxes))
 
 
 def produce_program(
