@@ -24,6 +24,9 @@ def add_swap_move(left_block_id: str, right_block_id: str) -> str:
 
 
 class Move:
+    def __init__(self, block_size: t.Optional[int] = None):
+        self.block_size = block_size
+
     @staticmethod
     def cost() -> int:
         raise NotImplementedError
@@ -33,8 +36,13 @@ class Move:
 
 
 class PointCut(Move):
-    def __init__(self, block_id: str, offset_point: t.Union[np.ndarray, t.Tuple[int, int]]):
-        super().__init__()
+    def __init__(
+            self,
+            block_id: str,
+            offset_point: t.Union[np.ndarray, t.Tuple[int, int]],
+            block_size: t.Optional[int] = None
+    ):
+        super().__init__(block_size)
         self.block_id = block_id
         self.offset_point = offset_point
 
@@ -47,8 +55,8 @@ class PointCut(Move):
 
 
 class LineCut(Move):
-    def __init__(self, block_id: str, orientation: Orientation, offset: int):
-        super().__init__()
+    def __init__(self, block_id: str, orientation: Orientation, offset: int, block_size: t.Optional[int] = None):
+        super().__init__(block_size)
         self.block_id = block_id
         self.orientation = orientation
         self.offset = offset
@@ -62,8 +70,13 @@ class LineCut(Move):
 
 
 class ColorMove(Move):
-    def __init__(self, block_id: str, color: t.Union[np.ndarray, t.Tuple[int, int, int, int]]):
-        super().__init__()
+    def __init__(
+            self,
+            block_id: str,
+            color: t.Union[np.ndarray, t.Tuple[int, int, int, int]],
+            block_size: t.Optional[int] = None
+    ):
+        super().__init__(block_size)
         self.block_id = block_id
         self.color = color
 
@@ -76,8 +89,8 @@ class ColorMove(Move):
 
 
 class Swap(Move):
-    def __init__(self, left_block_id: str, right_block_id: str):
-        super().__init__()
+    def __init__(self, left_block_id: str, right_block_id: str, block_size: t.Optional[int] = None):
+        super().__init__(block_size)
         self.left_block_id = left_block_id
         self.right_block_id = right_block_id
 
@@ -90,8 +103,8 @@ class Swap(Move):
 
 
 class Merge(Move):
-    def __init__(self, left_block_id: str, right_block_id: str):
-        super().__init__()
+    def __init__(self, left_block_id: str, right_block_id: str, block_size: t.Optional[int] = None):
+        super().__init__(block_size)
         self.left_block_id = left_block_id
         self.right_block_id = right_block_id
 
@@ -105,7 +118,7 @@ class Merge(Move):
 
 class EmptyMove(Move):
     def __init__(self):
-        super().__init__()
+        super().__init__(0)
 
     @staticmethod
     def cost() -> int:
@@ -117,3 +130,10 @@ class EmptyMove(Move):
 
 def get_program(moves: t.Iterable[Move]) -> Program:
     return list(map(lambda m: m.program(), moves))
+
+
+def get_block_size(move: Move, backup_size: t.Optional[int] = None):
+    if move.block_size is None:
+        return backup_size
+    else:
+        return move.block_size
