@@ -141,7 +141,7 @@ class Block:
 
 
 def parse_blocks(text: str) -> List[Block]:
-    pass # TODO implement
+    raise NotImplementedError
 
 
 class State:
@@ -150,6 +150,7 @@ class State:
                  initial_image: Optional[RGBAImage] = None,
                  blocks: Optional[List[Block]] = None,
                  global_block_id: Optional[int] = 0,
+                 moves: Optional[List[Move]] = None,
                  cur_image: Optional[RGBAImage] = None, # only for self.copy()
     ):
         self.__target_image = target_image.copy()
@@ -174,6 +175,11 @@ class State:
         else:
             self.__blocks = blocks
 
+        if moves is None:
+            self.__moves = []
+        else:
+            self.__moves = moves
+
     @property
     def wh(self) -> Tuple[int, int]:
         return self.__target_image.shape[1], self.__target_image.shape[0]
@@ -184,6 +190,7 @@ class State:
             initial_image=self.__initial_image,
             blocks=copy(self.__blocks),
             global_block_id=self.__global_block_id,
+            moves=self.__moves,
             cur_image=self.__cur_image.copy()
         )
 
@@ -202,6 +209,9 @@ class State:
     def global_block_id(self) -> str:
         return self.__global_block_id
 
+    def moves(self) -> List[Move]:
+        return copy(self.__moves)
+
     def block_at(self, x: int, y: int) -> Block:
         for block in self.__blocks:
             if block.is_in(x, y):
@@ -217,6 +227,12 @@ class State:
     def similarity(self) -> float:
         return image_similarity(self.__cur_image, self.__target_image)
 
+    def moves_cost(self) -> float:
+        raise NotImplementedError
+
+    def total_cost(self) -> float:
+        return self.similarity() + self.moves_cost()
+
     def lcut_veritical(self, x: int, y: int) -> Tuple[Move, Tuple[BlockId, BlockId]]:
         self.validate_cut(x, y)
         block_to_cut = self.block_at(x, y)
@@ -225,6 +241,7 @@ class State:
         self.__blocks.append(left_block)
         self.__blocks.append(right_block)
         move = LineCut(block_to_cut.block_id, Orientation.X, x)
+        self.__moves.append(move)
         return move, (left_block.block_id, right_block.block_id)
 
     def lcut_horizontal(self, x: int, y: int) -> Tuple[Move, Tuple[BlockId, BlockId]]:
@@ -235,6 +252,7 @@ class State:
         self.__blocks.append(bottom_block)
         self.__blocks.append(top_block)
         move = LineCut(block_to_cut.block_id, Orientation.Y, y)
+        self.__moves.append(move)
         return move, (bottom_block.block_id, top_block.block_id)
 
     def pcut(self, x: int, y: int) -> Tuple[Move, Tuple[BlockId, BlockId, BlockId, BlockId]]:
@@ -247,6 +265,7 @@ class State:
         self.__blocks.append(top_right_block)
         self.__blocks.append(top_left_block)
         move = PointCut(block_to_cut.block_id, (x, y))
+        self.__moves.append(move)
         return move, (bottom_left_block.block_id, bottom_right_block.block_id, top_right_block.block_id, top_left_block.block_id)
 
     def merge(self, block_id_1: BlockId, block_id_2: BlockId) -> Tuple[Move, Tuple[BlockId]]:
@@ -258,10 +277,11 @@ class State:
         self.__blocks.remove(block_2)
         self.__blocks.append(merged_block)
         move = Merge(block_id_1, block_id_2)
+        self.__moves.append(move)
         return move, (merged_block.block_id,)
 
     def swap(self, block_id_1: BlockId, block_id_2: BlockId):
-        pass
+        raise NotImplementedError
 
     def color(self, block_id: BlockId, color: Optional[Color]=None) -> Tuple[Move, Tuple]:
         block = self.block_by_id(block_id)
@@ -269,6 +289,7 @@ class State:
             color = block.average_color(self.__target_image)
         block.set_color(self.__cur_image, color)
         move = ColorMove(block_id, color)
+        self.__moves.append(move)
         return move, ()
 
     def validate_cut(self, x: int, y: int) -> None:
@@ -289,6 +310,10 @@ if __name__ == '__main__':
     move_2, __ = state.color(bid_l)
     move_3, (bid_m,) = state.merge(bid_l, bid_r)
     move_4, __ = state.color(bid_m)
+    move_5, (bl_bid, br_bid, tr_bid, tl_bid) = state.pcut(30, 150)
+    move_6, __ = state.color(bl_bid)
+    move_7, __ = state.color(br_bid)
+    move_8, __ = state.color(tr_bid)
 
     cv2.imshow('cur', state.cur_image())
     cv2.waitKey(0)

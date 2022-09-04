@@ -9,6 +9,7 @@ Box = t.Union[np.ndarray, t.Tuple[int, int, int, int]]  # bounding box in (x_min
 Program = t.Sequence[str]
 Color = t.Union[np.ndarray, t.Tuple[int, int, int, int]]  # RGBA color
 BlockId = str
+Cost = float
 
 
 class Orientation(Enum):
