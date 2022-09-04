@@ -54,8 +54,9 @@ def expand_pixel(
         canvas_height: int,
         canvas_width: int,
         expand_cost_fn: t.Callable[[Box], t.Optional[float]],
-        tol: float = 1,
-        min_block_area: int = 9
+        tol_iter: int = 0,
+        min_block_area: int = 9,
+        return_best: bool = True
 ) -> t.Optional[Box]:
     bbox = np.array([point[0], point[1], point[0] + 1, point[1] + 1], dtype=np.int64)
 
@@ -78,6 +79,8 @@ def expand_pixel(
 
     all_orientations = ExpandOrientation.get_all()
     cur_cost = None
+    cur_tol = 0
+    best_box = bbox.copy()
     while True:
         costs = list(filter(lambda x: x[1] is not None, enumerate(map(try_expand, all_orientations))))
         if len(costs) < 1:
@@ -88,10 +91,16 @@ def expand_pixel(
         else:
             if costs[cost_idx][1] < cur_cost:
                 cur_cost = costs[cost_idx][1]
+                cur_tol = 0
+                best_box = bbox.copy()
             else:
-                break
+                cur_tol += 1
+                if cur_tol > tol_iter:
+                    break
         cur_orientation = all_orientations[costs[cost_idx][0]]
         bbox = expand(bbox, cur_orientation)
+    if return_best:
+        bbox = best_box
     if box_size(bbox) < min_block_area:
         return None
     else:
