@@ -23,7 +23,7 @@ printColor (V4 r g b a) =
   word8Dec a <> "]"
 
 printBlockId :: BlockId -> Builder
-printBlockId blockId = "[" <> (mconcat  $ intersperse "." $ map intDec blockId) <> "]"
+printBlockId blockId = "[" <> mconcat (intersperse "." $ map intDec blockId) <> "]"
 
 printMove :: Move -> Builder
 printMove (LineCut  {..}) =
