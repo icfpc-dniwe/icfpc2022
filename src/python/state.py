@@ -130,7 +130,7 @@ class Block:
         top_left_block = Block(f'{self.__block_id}.3', top_left_box)
         return bottom_left_block, bottom_right_block, top_right_block, top_left_block
 
-    def merge(self, block, global_block_id: str) -> 'Block'':
+    def merge(self, block, global_block_id: str) -> 'Block':
         merged_box = self.__box.merge(block.box)
         merged_block = Block(f'{global_block_id}', merged_box)
         return merged_block
