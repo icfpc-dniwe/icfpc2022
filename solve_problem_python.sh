@@ -25,6 +25,6 @@ trap cleanup INT TERM EXIT
 
 out_path="$tmpdir/solution.txt"
 
-cd src && python -m python -p "../problems/$problem_id.png" -o "$out_path"
+cd src && python -m python -p "$problem_id" -o "$out_path" -r main
 
 curl -v -H "Authorization: Bearer $api_token" -F "file=@$out_path" "https://robovinci.xyz/api/submissions/$problem_id/create"
