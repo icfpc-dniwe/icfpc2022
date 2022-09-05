@@ -11,10 +11,9 @@
 
 ## Quick start
 
- * Install python requirenments: `pip install -r src/requirenments.txt`
- * Download problem through Git LFS.
- * Save your token in `api_token`.
- * Now you can submit your solution for a problem with `./solve_problem_python.sh <problem_id>`.
- * If you want to run a script locally, run `cd src && python -m python -p <problem_id> -o <out_path> -r blocks`.
- * The `blocks` option is for tasks 26--35, for 1--25 you'll need a `main` option.
+ * Install Python requirements: `pip install -r src/requirenments.txt`
+ * Save your token to `api_token`.
+ * Submit your solution for a problem with `./solve_problem.sh <problem_id>`.
+ * If you want to run a script locally, run `python -m python -p <problem_id> -o <out_path> -r blocks`.
+ * The `-r` option is for tasks 26--35, for 1--25 you'll need a `main` option.
 
