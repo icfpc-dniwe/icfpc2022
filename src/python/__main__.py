@@ -26,14 +26,14 @@ def blocks_run(problem_num: int, output_path: Path):
     old_canvas = create_canvas(blocks, *img.shape[:2])
     plt.imshow(old_canvas)
     plt.savefig('old_canvas.pdf')
-    # canvas, moves = merge_color_blocks.produce_program(img, blocks)
-    canvas, new_blocks, moves = linear_assignment.produce_program(img, blocks)
+    canvas, moves = merge_color_blocks.produce_program(img, blocks)
+    # _, moves = linear_assignment.produce_program(img, blocks)
     plt.figure()
     plt.imshow(canvas)
     plt.savefig('canvas.pdf')
     prog = get_program(moves)
-    do_nothing, do_prog = score_program_agaist_nothing(img, old_canvas, canvas, moves)
-    print('Final scores:', do_nothing, do_prog)
+    # do_nothing, do_prog = score_program_agaist_nothing(img, old_canvas, canvas, moves)
+    # print('Final scores:', do_nothing, do_prog)
     # with open('test_prog.txt', 'w') as f:
     #     print('\n'.join(prog), file=f)
     with output_path.open('w') as f:

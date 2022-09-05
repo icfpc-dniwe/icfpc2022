@@ -21,9 +21,9 @@ def get_swap_cost(img: RGBAImage, left_block: Block, right_block: Block) -> floa
 def produce_program(
         img: RGBAImage,
         blocks: t.Sequence[Block]
-) -> t.Tuple[RGBAImage, t.List[Block], t.List[Move]]:
+) -> t.Tuple[RGBAImage, t.List[Move]]:
     moves = []
-
+    cur_canvas = create_canvas(blocks, *img.shape[:2])
     cost_matrix = np.zeros((len(blocks), len(blocks)), dtype=np.float32) + 1
     for left_idx in range(0, len(blocks)-1):
         for right_idx in range(left_idx + 1, len(blocks)):
@@ -42,22 +42,11 @@ def produce_program(
         swapped.add(cur_row)
         swapped.add(cur_col)
         cur_cost = cost_matrix[cur_row, cur_col]
-        if cur_cost > 0:
-            if cur_col == cur_row:
-                new_blocks += [
-                    Block(blocks[cur_col].block_id, blocks[cur_col].box, blocks[cur_col].img_part)
-                ]
-            else:
-                new_blocks += [
-                    Block(blocks[cur_col].block_id, blocks[cur_col].box, blocks[cur_col].img_part),
-                    Block(blocks[cur_row].block_id, blocks[cur_row].box, blocks[cur_row].img_part)
-                ]
-        else:
+        if cur_cost < 0:
             moves.append(Swap(blocks[cur_row].block_id, blocks[cur_col].block_id,
                               max(box_size(blocks[cur_row].box), box_size(blocks[cur_col].box))))
-            new_blocks += [
-                Block(blocks[cur_row].block_id, blocks[cur_col].box, blocks[cur_col].img_part),
-                Block(blocks[cur_col].block_id, blocks[cur_row].box, blocks[cur_row].img_part)
-            ]
-    cur_canvas = create_canvas(new_blocks, *img.shape[:2])
-    return cur_canvas, new_blocks, moves
+            # left_box = blocks[cur_row].box
+            # right_box = blocks[cur_col].box
+            # cur_canvas[]
+    # cur_canvas = create_canvas(new_blocks, *img.shape[:2])
+    return cur_canvas, moves

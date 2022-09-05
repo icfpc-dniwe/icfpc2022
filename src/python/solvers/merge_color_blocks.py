@@ -131,29 +131,28 @@ def produce_program(
     moves = []
     cur_blocks = blocks
     cur_global_id = np.max([int(cur_block.block_id) for cur_block in blocks])
-    while new_cost < old_cost:
-        old_cost = new_cost
+    while len(cur_blocks) > 9:
         # try recoloring
-        recolor_canvas, recolor_moves = color_blocks.produce_program(img, cur_blocks, cur_canvas)
+        recolor_canvas, recolor_blocks, recolor_moves = color_blocks.produce_program(img, cur_blocks, cur_canvas)
         _, recolor_cost = score_program_agaist_nothing(img, default_canvas, recolor_canvas, moves + recolor_moves)
         # try merging, then recoloring
         new_blocks, merge_moves, new_global_id = merge_program(img, cur_blocks, cur_global_id)
-        merge_color_canvas, merge_color_moves = color_blocks.produce_program(img, new_blocks, cur_canvas)
-        _, merge_cost = score_program_agaist_nothing(img, default_canvas, merge_color_canvas,
-                                                     moves + merge_moves + merge_color_moves)
-        if recolor_cost < merge_cost or len(merge_color_moves) < 1:
+        # merge_color_canvas, merge_color_moves = color_blocks.produce_program(img, new_blocks, cur_canvas)
+        _, merge_cost = score_program_agaist_nothing(img, default_canvas, cur_canvas,
+                                                     moves + merge_moves)
+        if len(recolor_moves) > 0:
+            old_cost = new_cost
             new_cost = recolor_cost
-            if new_cost > old_cost:
-                break
+            # if new_cost > old_cost:
+            #     break
             cur_canvas = recolor_canvas
             moves += recolor_moves
+            cur_blocks = recolor_blocks
             print('Recoloring')
         else:
-            new_cost = merge_cost
-            if new_cost > old_cost:
-                break
-            cur_canvas = merge_color_canvas
-            moves += merge_moves + merge_color_moves
+            # new_cost = merge_cost
+            # cur_canvas = merge_color_canvas
+            moves += merge_moves
             cur_blocks = new_blocks
             cur_global_id = new_global_id
             print('Merging')

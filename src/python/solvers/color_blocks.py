@@ -9,7 +9,11 @@ from ..box_utils import get_part, box_size
 from ..scoring import image_similarity, block_similarity, static_cost
 
 
-def produce_program(img: RGBAImage, blocks: t.Sequence[Block], default_canvas: t.Optional[RGBAImage] = None) -> t.Tuple[RGBAImage, t.List[Move]]:
+def produce_program(
+        img: RGBAImage,
+        blocks: t.Sequence[Block],
+        default_canvas: t.Optional[RGBAImage] = None
+) -> t.Tuple[RGBAImage, t.List[Block], t.List[Move]]:
     h, w = img.shape[:2]
     img_area = h * w
     if default_canvas is None:
@@ -23,6 +27,7 @@ def produce_program(img: RGBAImage, blocks: t.Sequence[Block], default_canvas: t
                - image_similarity(get_part(img, box), old_part)
 
     moves = []
+    new_blocks = []
     for cur_block in blocks:
         block_id = cur_block.block_id
         x_min, y_min, x_max, y_max = cur_block.box
@@ -33,6 +38,10 @@ def produce_program(img: RGBAImage, blocks: t.Sequence[Block], default_canvas: t
         if cur_cost < 0:
             moves.append(ColorMove(block_id, cur_color, box_size(cur_box)))
             final_canvas[y_min:y_max, x_min:x_max] = cur_color
+            new_blocks.append(
+                Block(cur_block.block_id, cur_block.box, final_canvas[y_min:y_max, x_min:x_max])
+            )
         else:
             final_canvas[y_min:y_max, x_min:x_max] = cur_block.img_part
-    return final_canvas, moves
+            new_blocks.append(cur_block)
+    return final_canvas, new_blocks, moves
