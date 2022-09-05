@@ -2,6 +2,7 @@ import numpy as np
 import typing as t
 
 from .types import Box, RGBAImage
+from .image_utils import revert_y
 
 
 class Block:
@@ -27,9 +28,11 @@ def from_json(json_block: t.Dict[str, t.Any], canvas: t.Optional[RGBAImage] = No
     return Block(json_block['blockId'], (x_min, y_min, x_max, y_max), img_part)
 
 
-def create_canvas(blocks: t.Iterable[Block], height: int, width: int) -> RGBAImage:
+def create_canvas(blocks: t.Iterable[Block], height: int, width: int, reverse: bool = False) -> RGBAImage:
     canvas = np.zeros((height, width, 4), dtype=np.uint8)
     for cur_block in blocks:
         box = cur_block.box
         canvas[box[1]:box[3], box[0]:box[2]] = cur_block.img_part
+    if reverse:
+        canvas = revert_y(canvas)
     return canvas

@@ -23,7 +23,8 @@ def blocks_run(problem_num: int, output_path: Path):
         canvas_info = json.load(f)
     blocks_info = canvas_info['blocks']
     blocks = [from_json(cur_info) for cur_info in blocks_info]
-    old_canvas = create_canvas(blocks, *img.shape[:2])
+    # old_canvas = create_canvas(blocks, *img.shape[:2], reverse=True)
+    old_canvas = load_image(problems_path / f'{problem_num}.initial.png', revert=True)
     plt.imshow(old_canvas)
     plt.savefig('old_canvas.pdf')
 
@@ -31,15 +32,17 @@ def blocks_run(problem_num: int, output_path: Path):
     merge_moves, new_id = merge_color_blocks.line_merge(blocks, cur_id)
     _, do_prog = score_program_agaist_nothing(img, img, img, merge_moves)
     print('Merge cost:', do_prog)
-    canvas, moves = produce_program(img, num_random_starts=10, num_random_points=100,
+    canvas, moves = produce_program(img, num_random_starts=1, num_random_points=20,
                                     default_canvas=old_canvas, global_block_id=new_id)
+    print('MMM', len(moves))
     moves = merge_moves + moves
-
+    do_nothing, do_prog = score_program_agaist_nothing(img, old_canvas, canvas, moves)
+    print('Final scores:', do_nothing, do_prog)
     # canvas, moves = merge_color_blocks.produce_program(img, blocks)
     # # _, moves = linear_assignment.produce_program(img, blocks)
-    # plt.figure()
-    # plt.imshow(canvas)
-    # plt.savefig('canvas.pdf')
+    plt.figure()
+    plt.imshow(canvas)
+    plt.savefig('canvas2.pdf')
     prog = get_program(moves)
     # # do_nothing, do_prog = score_program_agaist_nothing(img, old_canvas, canvas, moves)
     # # print('Final scores:', do_nothing, do_prog)

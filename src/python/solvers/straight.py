@@ -15,12 +15,14 @@ def render_straight(
         source_img: RGBAImage,
         boxes: t.Sequence[Box],
         colors: t.Optional[t.Sequence[Color]] = None,
-        canvas: t.Optional[RGBAImage] = None,
+        default_canvas: t.Optional[RGBAImage] = None,
         global_block_id: int = 0,
         block_prefix: t.Optional[str] = None
 ) -> t.Tuple[RGBAImage, t.List[Move]]:
-    if canvas is None:
+    if default_canvas is None:
         canvas = np.zeros_like(source_img) + 255
+    else:
+        canvas = default_canvas.copy()
     h, w = canvas.shape[:2]
     img_size = h * w
     # global_block_id = 0

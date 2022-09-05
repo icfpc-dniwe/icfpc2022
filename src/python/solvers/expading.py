@@ -191,7 +191,7 @@ def produce_program(
             results = prepare_boxes(results, h, w)
             boxes, colors = unzip(results)
             new_canvas, moves = render_straight(img, list(boxes), list(colors),
-                                                canvas=default_canvas, global_block_id=global_block_id)
+                                                default_canvas=default_canvas, global_block_id=global_block_id)
             _, score = score_program_agaist_nothing(img, default_canvas, new_canvas, moves)
             print('New points score:', score)
         all_scores.append(score)
@@ -246,5 +246,5 @@ def produce_program(
             cur_box[3] -= 1
         new_boxes.append(cur_box)
     return render_straight(img, list(new_boxes), list(colors),
-                           canvas=default_canvas, global_block_id=global_block_id)
+                           default_canvas=default_canvas, global_block_id=global_block_id)
     # return render_straight(img, new_boxes, list(colors))
