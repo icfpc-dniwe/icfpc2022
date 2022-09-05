@@ -7,10 +7,14 @@ from .moves import Move, get_block_size
 
 
 def relative_static_cost(move: t.Union[Move, t.Type[Move]], block_area: int) -> float:
+    if block_area == 0:
+        return 10000
     return move.cost() / block_area
 
 
 def static_cost(move: t.Union[Move, t.Type[Move]], block_area: int, canvas_area: int) -> int:
+    if block_area == 0:
+        return 10000
     return round(move.cost() * canvas_area / block_area)
 
 

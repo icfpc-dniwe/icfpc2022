@@ -9,7 +9,7 @@ from python.types import Orientation
 from python.solvers.straight import render_straight
 from python.solvers.expading import produce_program
 from python.solvers.line_print import render_by_line
-from python.solvers import color_blocks, merge_color_blocks
+from python.solvers import color_blocks, merge_color_blocks, linear_assignment
 from python.moves import get_program
 from python.scoring import score_program_agaist_nothing
 from python.box_utils import box_wh, box_size
@@ -23,7 +23,8 @@ def blocks_run(problem_num: int, output_path: Path):
         canvas_info = json.load(f)
     blocks_info = canvas_info['blocks']
     blocks = [from_json(cur_info) for cur_info in blocks_info]
-    canvas, moves = merge_color_blocks.produce_program(img, blocks)
+    # canvas, moves = merge_color_blocks.produce_program(img, blocks)
+    _, moves = linear_assignment.produce_program(img, blocks)
     prog = get_program(moves)
     # with open('test_prog.txt', 'w') as f:
     #     print('\n'.join(prog), file=f)
@@ -58,7 +59,7 @@ def test_run(problem_num: int):
 def main_run(problem_num: int, output_path: Path):
     problem_path = Path('../problems/') / f'{problem_num}.png'
     img = load_image(problem_path, revert=True)
-    canvas, moves = produce_program(img, num_random_starts=100, num_random_points=100)
+    canvas, moves = produce_program(img, num_random_starts=20, num_random_points=50)
     old_canvas = np.zeros_like(img) + 255
     do_nothing, do_prog = score_program_agaist_nothing(img, old_canvas, canvas, moves)
     print('Final scores:', do_nothing, do_prog)
