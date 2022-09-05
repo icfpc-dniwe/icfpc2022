@@ -56,7 +56,7 @@ def test_run(problem_num: int):
 def main_run(problem_num: int, output_path: Path):
     problem_path = Path('../problems/') / f'{problem_num}.png'
     img = load_image(problem_path, revert=True)
-    canvas, moves = produce_program(img, num_random_starts=10, num_random_points=100)
+    canvas, moves = produce_program(img, num_random_starts=100, num_random_points=100)
     old_canvas = np.zeros_like(img) + 255
     do_nothing, do_prog = score_program_agaist_nothing(img, old_canvas, canvas, (0, 0, 400, 400), moves)
     print('Final scores:', do_nothing, do_prog)

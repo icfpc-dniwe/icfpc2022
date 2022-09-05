@@ -19,15 +19,24 @@ def expand_cost_fn(
         new_color: Color,
         box: Box,
         img_area: int,
-        move_lambda: float = 5
+        move_lambda: float = 5,
+        verbose: bool = False
 ) -> t.Optional[float]:
     left_sim = block_similarity(get_part(source_img, box), new_color)
     right_sim = image_similarity(get_part(source_img, box), get_part(cur_img, box))
+    move_cost = static_cost(ColorMove, box_size(box), img_area)
+    total = left_sim - right_sim + move_lambda * move_cost
     # if left_sim > right_sim:
     #     return None
     # else:
     #     return left_sim - right_sim + move_lambda * static_cost(ColorMove, box_size(box), img_area)
-    return left_sim - right_sim + move_lambda * static_cost(ColorMove, box_size(box), img_area)
+    if verbose:
+        print('left_sim:', left_sim)
+        print('right_sim:', right_sim)
+        print('move cost:', move_cost)
+        print('lambda:', move_lambda)
+        print('total:', total)
+    return total
 
 
 def mult_box(cur_box: Box, mult: float) -> Box:
@@ -52,21 +61,25 @@ def get_boxes(
     # r_img = cv2.resize(img, (50, 50))
     # r_h, r_w = r_img.shape[:2]
     real_rendered_canvas = np.zeros_like(img) + 255
+    # print('Staring sim score:', image_similarity(img, real_rendered_canvas))
     boxes = []
     colors = []
     for point_idx, (cur_x, cur_y) in enumerate(tqdm(starting_points)):
         cur_color = img[cur_y, cur_x]
-        cur_scorring = lambda box: expand_cost_fn(img, real_rendered_canvas, cur_color, box,
-                                                  real_canvas_area, move_lambda)
+
+        def cur_scorring(box, verbose: bool = False):
+            return expand_cost_fn(img, real_rendered_canvas, cur_color, box,
+                                  real_canvas_area, move_lambda, verbose=verbose)
         new_box = expand_pixel((cur_x, cur_y), h, w, cur_scorring, tol_iter=tol_iter, return_best=return_best)
         if new_box is not None:
-            score = cur_scorring(new_box)
+            score = cur_scorring(new_box, verbose=False)
             # print(cur_y, cur_x, '|> adding a new box?:', new_box, cur_color, score)
             if score < choose_thresholds[point_idx]:
                 # print(cur_y, cur_x, '|> adding a new box:', new_box, cur_color)
                 boxes.append(new_box)
                 colors.append(cur_color)
                 real_rendered_canvas[new_box[1]:new_box[3], new_box[0]:new_box[2]] = cur_color
+                # print('New sim score:', image_similarity(img, real_rendered_canvas))
     sim_score = image_similarity(img, real_rendered_canvas)
     render_score = sum([move_lambda * static_cost(ColorMove, box_size(cur_box), real_canvas_area) for cur_box in boxes])
     total_score = sim_score + render_score
@@ -117,24 +130,27 @@ def produce_program(
     top_results = results
     top_idx = -1
     params = []
+    all_scores = []
     for cur_idx in range(num_random_starts):
-        starting_x = np.random.randint(0, w, size=num_random_points)
-        starting_y = np.random.randint(0, h, size=num_random_points)
+        cur_num_points = np.random.randint(num_random_points, 2 * num_random_points)
+        starting_x = np.random.randint(0, w, size=cur_num_points)
+        starting_y = np.random.randint(0, h, size=cur_num_points)
         cur_tolerance = np.random.randint(0, 20)
         cur_return_best = np.random.rand() < 0.8
         if np.random.rand() < 0.5:
             max_threshold = np.exp(np.random.rand() * 7)
             min_threshold = -np.exp(np.random.rand() * 7)
-            thresholds = np.linspace(min_threshold, max_threshold, num=num_random_points)[::-1]
+            thresholds = np.linspace(min_threshold, max_threshold, num=cur_num_points)[::-1]
         else:
-            thresholds = [0] * num_random_points
+            thresholds = [0] * cur_num_points
         starting_points = list(zip(starting_x, starting_y))
-        params.append((cur_tolerance, cur_return_best, np.max(thresholds), np.min(thresholds)))
+        params.append((cur_tolerance, cur_return_best, np.max(thresholds), np.min(thresholds), cur_num_points))
         print('Hyperparameters:')
         print('Tolerance:', cur_tolerance)
         print('Return best:', cur_return_best)
         print('Max threshold:', np.max(thresholds))
         print('Min threshold:', np.min(thresholds))
+        print('Num points:', cur_num_points)
         results, score = get_boxes(img, starting_points,
                                    tol_iter=cur_tolerance,
                                    return_best=cur_return_best,
@@ -145,6 +161,7 @@ def produce_program(
             new_canvas, moves = render_straight(img, list(boxes), list(colors))
             _, score = score_program_agaist_nothing(img, default_canvas, new_canvas, (0, 0, 1, 1), moves)
             print('New points score:', score)
+        all_scores.append(score)
         if score < top_score:
             top_score = score
             top_results = results
@@ -156,6 +173,17 @@ def produce_program(
     print('Return best:', params[top_idx][1])
     print('Max threshold:', params[top_idx][2])
     print('Min threshold:', params[top_idx][3])
+    print('Num points:', params[top_idx][4])
+    with open('top_results.txt', 'w') as f:
+        indices = np.argsort(all_scores)
+        for cur_idx in indices:
+            print('-' * 10, file=f)
+            print('Score:', all_scores[cur_idx], file=f)
+            print('Tolerance:', params[cur_idx][0], file=f)
+            print('Return best:', params[cur_idx][1], file=f)
+            print('Max threshold:', params[cur_idx][2], file=f)
+            print('Min threshold:', params[cur_idx][3], file=f)
+            print('Num points:', params[cur_idx][4], file=f)
     if len(top_results) < 1:
         return img, [EmptyMove()]
     results = filter_unneeded_boxes(top_results, h, w)

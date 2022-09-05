@@ -59,7 +59,7 @@ def find_top_left_block(blocks: t.Sequence[Block]) -> int:
     return found_idx
 
 
-def produce_program(
+def merge_program(
         img: RGBAImage,
         blocks: t.Sequence[Block],
         default_canvas: t.Optional[RGBAImage] = None,
@@ -116,3 +116,12 @@ def produce_program(
                 del old_blocks[bottom_left_block]
                 del old_blocks[bottom_neighbor]
     return new_blocks, moves
+
+
+def produce_program(
+        img: RGBAImage,
+        blocks: t.Sequence[Block],
+        default_canvas: t.Optional[RGBAImage] = None,
+        global_block_id: t.Optional[int] = None
+) -> t.List[Move]:
+    pass
