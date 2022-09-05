@@ -102,6 +102,10 @@ class Block:
     def box(self) -> BoxMk2:
         return self.__box
 
+    @property
+    def wh(self) -> Tuple[int, int]:
+        return self.__box.wh
+
     def is_in(self, x: int, y: int) -> bool:
         return self.__box.is_in(x, y)
 
@@ -303,10 +307,11 @@ class State:
             box = BoxMk2(box)
 
         x_min, y_min, x_max, y_max = box.box
-        w, h = self.wh
         moves = []
         block_1 = self.block_at(x_min, y_min)
         block_2 = self.block_at(x_max-1, y_max-1)
+        # w, h = self.wh
+        w, h = block_1.wh
 
         if block_1.box.box == box.box:
             self.color(block_1.block_id, color)
@@ -425,17 +430,21 @@ if __name__ == '__main__':
     # move_7, __ = state.color(br_bid)
     # move_8, __ = state.color(tr_bid)
 
-    # moves, main_bid = state.color_rect_and_remerge([150, 150, 250, 250])
-
+    moves, main_bid = state.color_rect_and_remerge([150, 150, 250, 250])
     moves, main_bid = state.color_rect_and_remerge([0, 0, 20, 25])
     moves, main_bid = state.color_rect_and_remerge([380, 0, 400, 25])
     moves, main_bid = state.color_rect_and_remerge([380, 375, 400, 400])
     moves, main_bid = state.color_rect_and_remerge([0, 375, 20, 400])
-
     moves, main_bid = state.color_rect_and_remerge([0, 150, 20, 250])
     moves, main_bid = state.color_rect_and_remerge([150, 0, 250, 25])
     moves, main_bid = state.color_rect_and_remerge([380, 150, 400, 250])
     moves, main_bid = state.color_rect_and_remerge([150, 375, 250, 400])
+
+    moves, main_bid = state.color_rect_and_remerge([150, 150, 170, 175])
+    moves, main_bid = state.color_rect_and_remerge([230, 150, 250, 175])
+    moves, main_bid = state.color_rect_and_remerge([230, 225, 250, 250])
+    moves, main_bid = state.color_rect_and_remerge([150, 225, 170, 250])
+    moves, main_bid = state.color_rect_and_remerge([190, 190, 210, 210])
 
     cv2.imshow('cur', state.cur_image())
     cv2.waitKey(0)
