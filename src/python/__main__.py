@@ -32,7 +32,7 @@ def blocks_run(problem_num: int, output_path: Path):
     merge_moves, new_id = merge_color_blocks.line_merge(blocks, cur_id)
     _, do_prog = score_program_agaist_nothing(img, img, img, merge_moves)
     print('Merge cost:', do_prog)
-    canvas, moves = produce_program(img, num_random_starts=30, num_random_points=30,
+    canvas, moves = produce_program(img, num_random_starts=30, num_random_points=50,
                                     default_canvas=old_canvas, global_block_id=new_id)
     print('MMM', len(moves))
     moves = merge_moves + moves
