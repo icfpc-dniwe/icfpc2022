@@ -2,7 +2,7 @@ import numpy as np
 from copy import copy
 import numpy.typing as npt
 from functools import cached_property
-from typing import List, Dict, Union
+from typing import Union
 from dataclasses import dataclass, field
 import numba as nb
 from enum import Enum
@@ -11,7 +11,7 @@ from PIL import Image
 
 Surface = npt.NDArray # 2D or 3D (with channels) array with an image
 Picture = Surface[np.uint8]
-BWPicture = Surface[np.np.uint32]
+BWPicture = Surface[np.uint32]
 
 BlockNum = int
 BlockId = tuple[BlockNum, ...]
@@ -22,7 +22,7 @@ Cost = int
 
 
 @nb.jit(nopython=True)
-def surface_to_norm(surface: Surface) -> PictureNorm:
+def surface_to_norm(surface: Surface) -> Surface:
     return np.sum(surface * surface, axis=2)
 
 
@@ -71,7 +71,7 @@ def similarity_cost(pic1: Picture, pic2: Picture, alpha=0.005) -> int:
 class Orientation(Enum):
     X = 0
     Y = 1
-    
+
     def __str__(self):
         if self == Orientation.X:
             return "x"
@@ -89,7 +89,7 @@ class Move:
     @staticmethod
     def cost() -> int:
         raise NotImplementedError
-        
+
     def command(self) -> str:
         raise NotImplementedError
 
@@ -106,7 +106,7 @@ class LineCutMove(Move):
 
     def command(self):
         return f"cut [{block_id_str(self.block)}] [{self.orientation}] [{self.offset}]"
-        
+
 
 @dataclass
 class PointCutMove(Move):
@@ -145,13 +145,13 @@ def mean_color(pic: Picture) -> Color:
     return np.around(np.mean(pic, axis=(0, 1))).astype(np.uint8)
 
 
-def print_program(moves: List[Move]):
+def print_program(moves: list[Move]):
     print("\n".join(map(lambda x: x.command(), moves)))
 
 
 @dataclass
 class State:
-    moves: List[Move] = field(default_factory=list)
+    moves: list[Move] = field(default_factory=list)
     next_global_block: BlockNum = 1
     cost: Cost = 0
 
@@ -162,11 +162,11 @@ class Input:
     block: Picture
     block_id: BlockId
     offset: Point
-    
+
     @cached_property
     def mean_color(self):
         return mean_color(self.block)
-    
+
     @cached_property
     def noop_similarity_cost(self):
         return similarity_cost(self.block, CANVAS_COLOR)
@@ -174,7 +174,7 @@ class Input:
     @property
     def noop_total_cost(self):
         return self.noop_similarity_cost
-    
+
     @cached_property
     def color_move_cost(self):
         return move_cost(self.picture.shape, self.block.shape, ColorMove.cost())
@@ -186,11 +186,11 @@ class Input:
     @property
     def color_total_cost(self):
         return self.color_move_cost + self.color_similarity_cost
-    
+
     @property
     def min_total_cost(self):
         return min(self.noop_total_cost, self.color_total_cost)
-    
+
 
 def _solve(state: State, input: Input) -> State:
     color_state = copy(state)
@@ -206,13 +206,12 @@ def _solve(state: State, input: Input) -> State:
         color_similarity_cost = input.noop_similarity_cost
 
     if color_similarity_cost < 0.25 * input.block.shape[0] * input.block.shape[1]:
-        #print(f"Exiting early, block id {input.block_id}")
         return color_state
-    
+
     cut_point = find_cut_point(input.block)
-    
+
     line_cut_cost = move_cost(input.picture.shape, input.block.shape, LineCutMove.cost())
-    
+
     if input.block.shape[1] <= 1 or cut_point[0] <= 0 or cut_point[0] >= input.block.shape[0] - 1:
         horizontal_cost = None
     else:
@@ -287,7 +286,7 @@ def _solve(state: State, input: Input) -> State:
             input_point_1.min_total_cost + \
             input_point_2.min_total_cost + \
             input_point_3.min_total_cost
-    
+
     min_cut_cost = None
     if horizontal_cost is not None:
         min_cut_cost = horizontal_cost if min_cut_cost is None else min(min_cut_cost, horizontal_cost)
@@ -345,3 +344,72 @@ def solve(picture: Picture) -> State:
         offset=np.zeros((2,), np.int_),
     )
     return _solve(state, input)
+
+
+@dataclass
+class Block:
+    original: Picture
+    offset: Point
+
+
+def simulate(picture: Picture, moves: list[Move]) -> tuple[list[tuple[int, Picture]], dict[BlockId, Block]]:
+    blocks = {
+        (0,): Block(
+            original=picture,
+            offset=np.zeros((2,), np.int_),
+        ),
+    }
+    next_global_block = 0
+    canvases = [(0, empty_canvas(picture.shape))]
+
+    for i, move in enumerate(moves):
+        if isinstance(move, LineCutMove):
+            block = blocks[move.block]
+            if move.orientation == Orientation.X:
+                blocks[move.block + (0,)] = Block(
+                    original=block.original[:move.offset - block.offset[0], :],
+                    offset=block.offset,
+                )
+                blocks[move.block + (1,)] = Block(
+                    original=block.original[move.offset - block.offset[0]:, :],
+                    offset=np.array([move.offset, block.offset[1]]),
+                )
+            elif move.orientation == Orientation.Y:
+                blocks[move.block + (0,)] = Block(
+                    original=block.original[:, :move.offset - block.offset[1]],
+                    offset=block.offset,
+                )
+                blocks[move.block + (1,)] = Block(
+                    original=block.original[:, move.offset - block.offset[1]:],
+                    offset=np.array([block.offset[0], move.offset]),
+                )
+            else:
+                raise RuntimeError("Invalid orientation")
+        elif isinstance(move, PointCutMove):
+            block = blocks[move.block]
+            blocks[move.block + (0,)] = Block(
+                original=block.original[:move.point[0] - block.offset[0], :move.point[1] - block.offset[1]],
+                offset=block.offset,
+            )
+            blocks[move.block + (1,)] = Block(
+                original=block.original[move.point[0] - block.offset[0]:, :move.point[1] - block.offset[1]],
+                offset=np.array([move.point[0], block.offset[1]]),
+            )
+            blocks[move.block + (2,)] = Block(
+                original=block.original[move.point[0] - block.offset[0]:, move.point[1] - block.offset[1]:],
+                offset=move.point,
+            )
+            blocks[move.block + (3,)] = Block(
+                original=block.original[:move.point[0] - block.offset[0], move.point[1] - block.offset[1]:],
+                offset=np.array([block.offset[0], move.point[1]]),
+            )
+        elif isinstance(move, ColorMove):
+            block = blocks[move.block]
+            canvas = np.copy(canvases[-1][1])
+            canvas[block.offset[0]:block.offset[0] + block.original.shape[0],
+                   block.offset[1]:block.offset[1] + block.original.shape[1]] = move.color
+            canvases.append((i, canvas))
+        else:
+            raise RuntimeError("Unknown move type")
+
+    return canvases, blocks

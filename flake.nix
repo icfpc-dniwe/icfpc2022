@@ -13,28 +13,35 @@
           system = system;
           overlays = nixpkgs.lib.attrValues jupyterWith.overlays;
         };
+
+        pythonPkgs = p: with p; [
+          numpy
+          numba
+          pillow
+          opencv4
+          scikitlearn
+          scikitimage
+        ];
+
         iPython = pkgs.kernels.iPythonWith {
           name = "Python-env";
-          packages = p: with p; [
-            numpy
-            numba
-            pillow
-            opencv4
-            scikitlearn
-            scikitimage
-	  ];
+          packages = pythonPkgs;
           ignoreCollisions = true;
         };
+
         jupyterEnvironment = pkgs.jupyterlabWith {
           kernels = [ iPython ];
         };
+
       in rec {
         apps.jupyterlab = {
           type = "app";
           program = "${jupyterEnvironment}/bin/jupyter-lab";
         };
         defaultApp = apps.jupyterlab;
-        devShell = jupyterEnvironment.env;
+        devShell = jupyterEnvironment.env.overrideAttrs (self: {
+          nativeBuildInputs = self.nativeBuildInputs or [] ++ [(pkgs.python3.withPackages pythonPkgs)];
+        });
       }
     );
 }
