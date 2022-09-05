@@ -28,9 +28,10 @@ def produce_program(img: RGBAImage, blocks: t.Sequence[Block], default_canvas: t
         x_min, y_min, x_max, y_max = cur_block.box
         block_img = cur_block.img_part
         cur_box = (x_min, y_min, x_max, y_max)
-        cur_color = np.mean(img[y_min:y_max, x_min:x_max], axis=(0, 1))
-        if move_cost(cur_box, block_img, cur_color) < 0:
-            moves.append(ColorMove(block_id, cur_color))
+        cur_color = np.mean(img[y_min:y_max, x_min:x_max], axis=(0, 1)).astype(np.uint8)
+        cur_cost = move_cost(cur_box, block_img, cur_color)
+        if cur_cost < 0:
+            moves.append(ColorMove(block_id, cur_color, box_size(cur_box)))
             final_canvas[y_min:y_max, x_min:x_max] = cur_color
         else:
             final_canvas[y_min:y_max, x_min:x_max] = cur_block.img_part

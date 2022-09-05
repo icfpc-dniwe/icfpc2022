@@ -84,7 +84,7 @@ def merge_program(
             moves.append(Merge(blocks[bottom_left_block].block_id, blocks[right_neighbor].block_id,
                                max(box_size(blocks[bottom_left_block].box), box_size(blocks[right_neighbor].box))))
             global_block_id += 1
-            new_blocks.append(Block(f'{global_block_id}', merged_box, get_part(img, merged_box)))
+            # new_blocks.append(Block(f'{global_block_id}', merged_box, get_part(img, merged_box)))
             del old_blocks[bottom_left_block]
             del old_blocks[right_neighbor]
             if bottom_neighbor >= 0:
@@ -95,7 +95,7 @@ def merge_program(
                 moves.append(Merge(blocks[bottom_neighbor].block_id, blocks[n_right_neighbor].block_id,
                                    max(box_size(blocks[bottom_neighbor].box), box_size(blocks[n_right_neighbor].box))))
                 global_block_id += 1
-                new_blocks.append(Block(f'{global_block_id}', bottom_merged_box, get_part(img, bottom_merged_box)))
+                # new_blocks.append(Block(f'{global_block_id}', bottom_merged_box, get_part(img, bottom_merged_box)))
 
                 n_merged_box = (merged_box[0], merged_box[1], bottom_merged_box[2], bottom_merged_box[3])
                 moves.append(Merge(f'{global_block_id-1}', f'{global_block_id}',
@@ -104,6 +104,8 @@ def merge_program(
                 new_blocks.append(Block(f'{global_block_id}', n_merged_box, get_part(img, n_merged_box)))
                 del old_blocks[bottom_neighbor]
                 del old_blocks[n_right_neighbor]
+            else:
+                new_blocks.append(Block(f'{global_block_id}', merged_box, get_part(img, merged_box)))
         else:
             if bottom_neighbor >= 0:
                 top_box = blocks[bottom_left_block].box
@@ -120,8 +122,7 @@ def merge_program(
 
 def produce_program(
         img: RGBAImage,
-        blocks: t.Sequence[Block],
-        global_block_id: t.Optional[int] = None
+        blocks: t.Sequence[Block]
 ) -> t.Tuple[RGBAImage, t.List[Move]]:
     default_canvas = create_canvas(blocks, *img.shape[:2])
     cur_canvas = default_canvas.copy()
@@ -140,15 +141,22 @@ def produce_program(
         merge_color_canvas, merge_color_moves = color_blocks.produce_program(img, new_blocks, cur_canvas)
         _, merge_cost = score_program_agaist_nothing(img, default_canvas, merge_color_canvas,
                                                      moves + merge_moves + merge_color_moves)
-        if recolor_cost < merge_cost:
+        if recolor_cost < merge_cost or len(merge_color_moves) < 1:
             new_cost = recolor_cost
+            if new_cost > old_cost:
+                break
             cur_canvas = recolor_canvas
             moves += recolor_moves
+            print('Recoloring')
         else:
             new_cost = merge_cost
+            if new_cost > old_cost:
+                break
             cur_canvas = merge_color_canvas
             moves += merge_moves + merge_color_moves
             cur_blocks = new_blocks
             cur_global_id = new_global_id
+            print('Merging')
+        print('New cost:', new_cost, 'Old cost:', old_cost)
 
     return cur_canvas, moves

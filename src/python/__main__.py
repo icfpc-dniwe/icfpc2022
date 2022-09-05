@@ -4,15 +4,16 @@ from pathlib import Path
 
 import numpy as np
 from matplotlib import pyplot as plt
-from .image_utils import load_image, collect_boxes, allgomerative_image, get_colored_img
-from .types import Orientation
-from .solvers.straight import render_straight
-from .solvers.expading import produce_program
-from .solvers.line_print import render_by_line
-from .solvers import color_blocks
-from .moves import get_program
-from .scoring import score_program_agaist_nothing
-from .box_utils import box_wh, box_size
+from python.image_utils import load_image, collect_boxes, allgomerative_image, get_colored_img
+from python.types import Orientation
+from python.solvers.straight import render_straight
+from python.solvers.expading import produce_program
+from python.solvers.line_print import render_by_line
+from python.solvers import color_blocks, merge_color_blocks
+from python.moves import get_program
+from python.scoring import score_program_agaist_nothing
+from python.box_utils import box_wh, box_size
+from python.block import Block, from_json
 
 
 def blocks_run(problem_num: int, output_path: Path):
@@ -21,7 +22,8 @@ def blocks_run(problem_num: int, output_path: Path):
     with (problems_path / f'{problem_num}.initial.json').open('r') as f:
         canvas_info = json.load(f)
     blocks_info = canvas_info['blocks']
-    moves = color_blocks.produce_program(img, blocks_info)
+    blocks = [from_json(cur_info) for cur_info in blocks_info]
+    canvas, moves = merge_color_blocks.produce_program(img, blocks)
     prog = get_program(moves)
     # with open('test_prog.txt', 'w') as f:
     #     print('\n'.join(prog), file=f)
