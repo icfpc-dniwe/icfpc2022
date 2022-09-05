@@ -1,5 +1,6 @@
 import numpy as np
 import cv2
+import random
 from tqdm import tqdm
 import typing as t
 from itertools import product
@@ -9,6 +10,7 @@ from .straight import render_straight
 from ..mosaic.fill import expand_pixel
 from ..scoring import block_similarity, image_similarity, static_cost, score_program_agaist_nothing
 from ..box_utils import box_size, get_part
+from ..image_utils import allgomerative_image
 from ..moves import ColorMove, Move, EmptyMove
 from ..types import RGBAImage, Box, Color, Program
 
@@ -131,10 +133,32 @@ def produce_program(
     top_idx = -1
     params = []
     all_scores = []
-    for cur_idx in range(num_random_starts):
+    for start_idx in range(num_random_starts):
         cur_num_points = np.random.randint(num_random_points, 2 * num_random_points)
-        starting_x = np.random.randint(0, w, size=cur_num_points)
-        starting_y = np.random.randint(0, h, size=cur_num_points)
+        if np.random.rand() < 0.8:
+            agglomerative_clusters = np.random.randint(10, 40)
+            label_img, color_map = allgomerative_image(img, agglomerative_clusters)
+            per_cluster = (cur_num_points - 10) // agglomerative_clusters
+            num_rest = cur_num_points - per_cluster * agglomerative_clusters
+            num_begin = num_rest // 2
+            num_end = num_rest - num_begin
+            begin_x = np.random.randint(0, w, size=num_begin)
+            begin_y = np.random.randint(0, h, size=num_begin)
+            end_x = np.random.randint(0, w, size=num_end)
+            end_y = np.random.randint(0, h, size=num_end)
+            agglomerative_points = []
+            # aggl_keys = list(color_map.keys())
+            # random.shuffle(aggl_keys)
+            for cur_label in color_map.keys():
+                points = list(zip(*np.where(label_img == cur_label)))
+                agglomerative_points += random.choices(points, k=per_cluster)
+            random.shuffle(agglomerative_points)
+            starting_points = list(zip(begin_x, begin_y)) + agglomerative_points + list(zip(end_x, end_y))
+        else:
+            agglomerative_clusters = 0
+            starting_x = np.random.randint(0, w, size=cur_num_points)
+            starting_y = np.random.randint(0, h, size=cur_num_points)
+            starting_points = list(zip(starting_x, starting_y))
         cur_tolerance = np.random.randint(0, 20)
         cur_return_best = np.random.rand() < 0.8
         if np.random.rand() < 0.5:
@@ -143,14 +167,14 @@ def produce_program(
             thresholds = np.linspace(min_threshold, max_threshold, num=cur_num_points)[::-1]
         else:
             thresholds = [0] * cur_num_points
-        starting_points = list(zip(starting_x, starting_y))
-        params.append((cur_tolerance, cur_return_best, np.max(thresholds), np.min(thresholds), cur_num_points))
+        params.append((cur_tolerance, cur_return_best, np.max(thresholds), np.min(thresholds), cur_num_points, agglomerative_clusters))
         print('Hyperparameters:')
         print('Tolerance:', cur_tolerance)
         print('Return best:', cur_return_best)
         print('Max threshold:', np.max(thresholds))
         print('Min threshold:', np.min(thresholds))
         print('Num points:', cur_num_points)
+        print('agglomerative_clusters:', agglomerative_clusters)
         results, score = get_boxes(img, starting_points,
                                    tol_iter=cur_tolerance,
                                    return_best=cur_return_best,
@@ -165,7 +189,18 @@ def produce_program(
         if score < top_score:
             top_score = score
             top_results = results
-            top_idx = cur_idx
+            top_idx = start_idx
+        with open('cur_top_results.txt', 'w') as f:
+            indices = np.argsort(all_scores)
+            for cur_idx in indices:
+                print('-' * 10, file=f)
+                print('Score:', all_scores[cur_idx], file=f)
+                print('Tolerance:', params[cur_idx][0], file=f)
+                print('Return best:', params[cur_idx][1], file=f)
+                print('Max threshold:', params[cur_idx][2], file=f)
+                print('Min threshold:', params[cur_idx][3], file=f)
+                print('Num points:', params[cur_idx][4], file=f)
+                print('agglomerative_clusters:', params[cur_idx][5], file=f)
     print('Top Score:', top_score)
     print('Num boxes:', len(top_results))
     print('Top hyperparameters:')
@@ -174,6 +209,7 @@ def produce_program(
     print('Max threshold:', params[top_idx][2])
     print('Min threshold:', params[top_idx][3])
     print('Num points:', params[top_idx][4])
+    print('agglomerative_clusters:', params[top_idx][5])
     with open('top_results.txt', 'w') as f:
         indices = np.argsort(all_scores)
         for cur_idx in indices:
@@ -184,6 +220,7 @@ def produce_program(
             print('Max threshold:', params[cur_idx][2], file=f)
             print('Min threshold:', params[cur_idx][3], file=f)
             print('Num points:', params[cur_idx][4], file=f)
+            print('agglomerative_clusters:', params[cur_idx][5], file=f)
     if len(top_results) < 1:
         return img, [EmptyMove()]
     results = filter_unneeded_boxes(top_results, h, w)
