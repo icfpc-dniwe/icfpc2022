@@ -40,7 +40,7 @@ def mult_box(cur_box: Box, mult: float) -> Box:
 def get_boxes(
         img: RGBAImage,
         starting_points: t.List[t.Tuple[int, int]],
-        tol_iter: int = 3,
+        tol_iter: int = 0,
         return_best: bool = True,
         choose_thresholds: t.Optional[t.Sequence[float]] = None
 ) -> t.Tuple[t.List[t.Tuple[Box, Color]], float]:
