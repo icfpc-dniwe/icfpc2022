@@ -41,8 +41,11 @@ def get_boxes(
         img: RGBAImage,
         starting_points: t.List[t.Tuple[int, int]],
         tol_iter: int = 3,
-        return_best: bool = True
+        return_best: bool = True,
+        choose_thresholds: t.Optional[t.Sequence[float]] = None
 ) -> t.Tuple[t.List[t.Tuple[Box, Color]], float]:
+    if choose_thresholds is None:
+        choose_thresholds = [0] * len(starting_points)
     h, w = img.shape[:2]
     real_canvas_area = h * w
     move_lambda = 2
@@ -51,7 +54,7 @@ def get_boxes(
     real_rendered_canvas = np.zeros_like(img) + 255
     boxes = []
     colors = []
-    for cur_x, cur_y in tqdm(starting_points):
+    for point_idx, (cur_x, cur_y) in enumerate(tqdm(starting_points)):
         cur_color = img[cur_y, cur_x]
         cur_scorring = lambda box: expand_cost_fn(img, real_rendered_canvas, cur_color, box,
                                                   real_canvas_area, move_lambda)
@@ -59,7 +62,7 @@ def get_boxes(
         if new_box is not None:
             score = cur_scorring(new_box)
             # print(cur_y, cur_x, '|> adding a new box?:', new_box, cur_color, score)
-            if score < 0:
+            if score < choose_thresholds[point_idx]:
                 # print(cur_y, cur_x, '|> adding a new box:', new_box, cur_color)
                 boxes.append(new_box)
                 colors.append(cur_color)
@@ -112,13 +115,30 @@ def produce_program(
     results, score = get_boxes(img, starting_points)
     top_score = np.inf
     top_results = results
-    for _ in range(num_random_starts):
+    top_idx = -1
+    params = []
+    for cur_idx in range(num_random_starts):
         starting_x = np.random.randint(0, w, size=num_random_points)
         starting_y = np.random.randint(0, h, size=num_random_points)
         cur_tolerance = np.random.randint(0, 20)
         cur_return_best = np.random.rand() < 0.8
+        if np.random.rand() < 0.5:
+            max_threshold = np.exp(np.random.rand() * 7)
+            min_threshold = -np.exp(np.random.rand() * 7)
+            thresholds = np.linspace(min_threshold, max_threshold, num=num_random_points)[::-1]
+        else:
+            thresholds = [0] * num_random_points
         starting_points = list(zip(starting_x, starting_y))
-        results, score = get_boxes(img, starting_points, tol_iter=cur_tolerance, return_best=cur_return_best)
+        params.append((cur_tolerance, cur_return_best, np.max(thresholds), np.min(thresholds)))
+        print('Hyperparameters:')
+        print('Tolerance:', cur_tolerance)
+        print('Return best:', cur_return_best)
+        print('Max threshold:', np.max(thresholds))
+        print('Min threshold:', np.min(thresholds))
+        results, score = get_boxes(img, starting_points,
+                                   tol_iter=cur_tolerance,
+                                   return_best=cur_return_best,
+                                   choose_thresholds=thresholds)
         if len(results) > 0:
             results = prepare_boxes(results, h, w)
             boxes, colors = unzip(results)
@@ -128,8 +148,14 @@ def produce_program(
         if score < top_score:
             top_score = score
             top_results = results
+            top_idx = cur_idx
     print('Top Score:', top_score)
     print('Num boxes:', len(top_results))
+    print('Top hyperparameters:')
+    print('Tolerance:', params[top_idx][0])
+    print('Return best:', params[top_idx][1])
+    print('Max threshold:', params[top_idx][2])
+    print('Min threshold:', params[top_idx][3])
     if len(top_results) < 1:
         return img, [EmptyMove()]
     results = filter_unneeded_boxes(top_results, h, w)
