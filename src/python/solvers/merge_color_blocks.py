@@ -38,7 +38,7 @@ def line_merge(blocks: t.Sequence[Block], cur_global_idx: int) -> t.Tuple[t.List
                 cur_big_block = Block(f'{cur_global_idx}',
                                       merge_boxes(cur_big_block, blocks[block_idx]),
                                       merge_parts(cur_big_block, blocks[block_idx]))
-            big_blocks.append(cur_big_block)
+        big_blocks.append(cur_big_block)
     cur_global_idx += 1
     moves.append(Merge(big_blocks[0], big_blocks[1]))
     cur_big_block = Block(
