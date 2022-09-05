@@ -52,6 +52,8 @@ def get_boxes(
         img: RGBAImage,
         starting_points: t.List[t.Tuple[int, int]],
         tol_iter: int = 0,
+        default_canvas: t.Optional[RGBAImage] = None,
+        global_block_id: int = 0,
         return_best: bool = True,
         choose_thresholds: t.Optional[t.Sequence[float]] = None
 ) -> t.Tuple[t.List[t.Tuple[Box, Color]], float]:
@@ -62,7 +64,10 @@ def get_boxes(
     move_lambda = 2
     # r_img = cv2.resize(img, (50, 50))
     # r_h, r_w = r_img.shape[:2]
-    real_rendered_canvas = np.zeros_like(img) + 255
+    if default_canvas is None:
+        real_rendered_canvas = np.zeros_like(img) + 255
+    else:
+        real_rendered_canvas = default_canvas.copy()
     # print('Staring sim score:', image_similarity(img, real_rendered_canvas))
     boxes = []
     colors = []
@@ -121,7 +126,8 @@ def produce_program(
         img: RGBAImage,
         num_random_starts: int = 0,
         num_random_points: int = 1000,
-        default_canvas: t.Optional[RGBAImage] = None
+        default_canvas: t.Optional[RGBAImage] = None,
+        global_block_id: int = 0
 ) -> t.Tuple[RGBAImage, t.List[Move]]:
     if default_canvas is None:
         default_canvas = np.zeros_like(img) + 255
@@ -178,11 +184,14 @@ def produce_program(
         results, score = get_boxes(img, starting_points,
                                    tol_iter=cur_tolerance,
                                    return_best=cur_return_best,
-                                   choose_thresholds=thresholds)
+                                   choose_thresholds=thresholds,
+                                   default_canvas=default_canvas
+                                   )
         if len(results) > 0:
             results = prepare_boxes(results, h, w)
             boxes, colors = unzip(results)
-            new_canvas, moves = render_straight(img, list(boxes), list(colors))
+            new_canvas, moves = render_straight(img, list(boxes), list(colors),
+                                                canvas=default_canvas, global_block_id=global_block_id)
             _, score = score_program_agaist_nothing(img, default_canvas, new_canvas, moves)
             print('New points score:', score)
         all_scores.append(score)
@@ -190,17 +199,17 @@ def produce_program(
             top_score = score
             top_results = results
             top_idx = start_idx
-        with open('cur_top_results.txt', 'w') as f:
-            indices = np.argsort(all_scores)
-            for cur_idx in indices:
-                print('-' * 10, file=f)
-                print('Score:', all_scores[cur_idx], file=f)
-                print('Tolerance:', params[cur_idx][0], file=f)
-                print('Return best:', params[cur_idx][1], file=f)
-                print('Max threshold:', params[cur_idx][2], file=f)
-                print('Min threshold:', params[cur_idx][3], file=f)
-                print('Num points:', params[cur_idx][4], file=f)
-                print('agglomerative_clusters:', params[cur_idx][5], file=f)
+        # with open('cur_top_results.txt', 'w') as f:
+        #     indices = np.argsort(all_scores)
+        #     for cur_idx in indices:
+        #         print('-' * 10, file=f)
+        #         print('Score:', all_scores[cur_idx], file=f)
+        #         print('Tolerance:', params[cur_idx][0], file=f)
+        #         print('Return best:', params[cur_idx][1], file=f)
+        #         print('Max threshold:', params[cur_idx][2], file=f)
+        #         print('Min threshold:', params[cur_idx][3], file=f)
+        #         print('Num points:', params[cur_idx][4], file=f)
+        #         print('agglomerative_clusters:', params[cur_idx][5], file=f)
     print('Top Score:', top_score)
     print('Num boxes:', len(top_results))
     print('Top hyperparameters:')
@@ -210,17 +219,17 @@ def produce_program(
     print('Min threshold:', params[top_idx][3])
     print('Num points:', params[top_idx][4])
     print('agglomerative_clusters:', params[top_idx][5])
-    with open('top_results.txt', 'w') as f:
-        indices = np.argsort(all_scores)
-        for cur_idx in indices:
-            print('-' * 10, file=f)
-            print('Score:', all_scores[cur_idx], file=f)
-            print('Tolerance:', params[cur_idx][0], file=f)
-            print('Return best:', params[cur_idx][1], file=f)
-            print('Max threshold:', params[cur_idx][2], file=f)
-            print('Min threshold:', params[cur_idx][3], file=f)
-            print('Num points:', params[cur_idx][4], file=f)
-            print('agglomerative_clusters:', params[cur_idx][5], file=f)
+    # with open('top_results.txt', 'w') as f:
+    #     indices = np.argsort(all_scores)
+    #     for cur_idx in indices:
+    #         print('-' * 10, file=f)
+    #         print('Score:', all_scores[cur_idx], file=f)
+    #         print('Tolerance:', params[cur_idx][0], file=f)
+    #         print('Return best:', params[cur_idx][1], file=f)
+    #         print('Max threshold:', params[cur_idx][2], file=f)
+    #         print('Min threshold:', params[cur_idx][3], file=f)
+    #         print('Num points:', params[cur_idx][4], file=f)
+    #         print('agglomerative_clusters:', params[cur_idx][5], file=f)
     if len(top_results) < 1:
         return img, [EmptyMove()]
     results = filter_unneeded_boxes(top_results, h, w)
@@ -236,4 +245,6 @@ def produce_program(
         if cur_box[3] == h:
             cur_box[3] -= 1
         new_boxes.append(cur_box)
-    return render_straight(img, new_boxes, list(colors))
+    return render_straight(img, list(new_boxes), list(colors),
+                           canvas=default_canvas, global_block_id=global_block_id)
+    # return render_straight(img, new_boxes, list(colors))

@@ -28,10 +28,12 @@ def blocks_run(problem_num: int, output_path: Path):
     plt.savefig('old_canvas.pdf')
 
     cur_id = np.max([int(b.block_id) for b in blocks])
-    merge_moves, _ = merge_color_blocks.line_merge(blocks, cur_id)
+    merge_moves, new_id = merge_color_blocks.line_merge(blocks, cur_id)
     _, do_prog = score_program_agaist_nothing(img, img, img, merge_moves)
     print('Merge cost:', do_prog)
-    moves = merge_moves
+    canvas, moves = produce_program(img, num_random_starts=10, num_random_points=100,
+                                    default_canvas=old_canvas, global_block_id=new_id)
+    moves = merge_moves + moves
 
     # canvas, moves = merge_color_blocks.produce_program(img, blocks)
     # # _, moves = linear_assignment.produce_program(img, blocks)
