@@ -183,7 +183,7 @@ def produce_program(
             results = prepare_boxes(results, h, w)
             boxes, colors = unzip(results)
             new_canvas, moves = render_straight(img, list(boxes), list(colors))
-            _, score = score_program_agaist_nothing(img, default_canvas, new_canvas, (0, 0, 1, 1), moves)
+            _, score = score_program_agaist_nothing(img, default_canvas, new_canvas, moves)
             print('New points score:', score)
         all_scores.append(score)
         if score < top_score:
