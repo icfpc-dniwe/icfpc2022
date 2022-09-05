@@ -13,7 +13,7 @@ from python.solvers import color_blocks, merge_color_blocks, linear_assignment
 from python.moves import get_program
 from python.scoring import score_program_agaist_nothing
 from python.box_utils import box_wh, box_size
-from python.block import Block, from_json
+from python.block import Block, from_json, create_canvas
 
 
 def blocks_run(problem_num: int, output_path: Path):
@@ -23,9 +23,17 @@ def blocks_run(problem_num: int, output_path: Path):
         canvas_info = json.load(f)
     blocks_info = canvas_info['blocks']
     blocks = [from_json(cur_info) for cur_info in blocks_info]
+    old_canvas = create_canvas(blocks, *img.shape[:2])
+    plt.imshow(old_canvas)
+    plt.savefig('old_canvas.pdf')
     # canvas, moves = merge_color_blocks.produce_program(img, blocks)
-    _, moves = linear_assignment.produce_program(img, blocks)
+    canvas, new_blocks, moves = linear_assignment.produce_program(img, blocks)
+    plt.figure()
+    plt.imshow(canvas)
+    plt.savefig('canvas.pdf')
     prog = get_program(moves)
+    do_nothing, do_prog = score_program_agaist_nothing(img, old_canvas, canvas, moves)
+    print('Final scores:', do_nothing, do_prog)
     # with open('test_prog.txt', 'w') as f:
     #     print('\n'.join(prog), file=f)
     with output_path.open('w') as f:
