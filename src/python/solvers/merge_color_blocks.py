@@ -10,6 +10,53 @@ from ..scoring import image_similarity, block_similarity, static_cost, score_pro
 from . import color_blocks
 
 
+def line_merge(blocks: t.Sequence[Block], cur_global_idx: int) -> t.Tuple[t.List[Move], int]:
+
+    def merge_boxes(left_block, right_block) -> Box:
+        x_min, y_min, _, _ = left_block.box
+        _, _, x_max, y_max = right_block.box
+        return x_min, y_min, x_max, y_max
+
+    def merge_parts(left_block, right_block):
+        return np.concatenate((left_block.img_part, right_block.img_part), axis=1)
+
+    per_line = int(np.sqrt(len(blocks)))
+    moves = []
+    big_blocks = []
+    for row_idx in range(per_line):
+        cur_big_block = None
+        for col_idx in range(1, per_line):
+            block_idx = int(row_idx * per_line + col_idx)
+            cur_global_idx += 1
+            if col_idx == 1:
+                moves.append(Merge(blocks[block_idx-1], blocks[block_idx]))
+                cur_big_block = Block(f'{cur_global_idx}',
+                                      merge_boxes(blocks[block_idx-1], blocks[block_idx]),
+                                      merge_parts(blocks[block_idx-1], blocks[block_idx]))
+            else:
+                moves.append(Merge(cur_big_block, blocks[block_idx]))
+                cur_big_block = Block(f'{cur_global_idx}',
+                                      merge_boxes(cur_big_block, blocks[block_idx]),
+                                      merge_parts(cur_big_block, blocks[block_idx]))
+            big_blocks.append(cur_big_block)
+    cur_global_idx += 1
+    moves.append(Merge(big_blocks[0], big_blocks[1]))
+    cur_big_block = Block(
+        f'{cur_global_idx}',
+        merge_boxes(big_blocks[0], big_blocks[1]),
+        merge_parts(big_blocks[0], big_blocks[1])
+    )
+    for row_idx in range(2, per_line):
+        cur_global_idx += 1
+        moves.append(Merge(cur_big_block, big_blocks[row_idx]))
+        cur_big_block = Block(
+            f'{cur_global_idx}',
+            merge_boxes(cur_big_block, big_blocks[1]),
+            merge_parts(cur_big_block, big_blocks[1])
+        )
+    return moves, cur_global_idx
+
+
 def blocks_are_neightbors(left_block: Block, right_block: Block) -> bool:
     left_box = left_block.box
     right_box = right_block.box
@@ -150,7 +197,7 @@ def produce_program(
             cur_blocks = recolor_blocks
             print('Recoloring')
         else:
-            # new_cost = merge_cost
+            new_cost = merge_cost
             # cur_canvas = merge_color_canvas
             moves += merge_moves
             cur_blocks = new_blocks

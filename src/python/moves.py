@@ -1,5 +1,7 @@
 import numpy as np
 import typing as t
+from .block import Block
+from .box_utils import box_size
 from .types import Orientation, Program
 
 
@@ -103,7 +105,14 @@ class Swap(Move):
 
 
 class Merge(Move):
-    def __init__(self, left_block_id: str, right_block_id: str, block_size: t.Optional[int] = None):
+    def __init__(self, left_block: t.Union[Block, str], right_block: t.Union[Block, str], block_size: t.Optional[int] = None):
+        if isinstance(left_block, Block):
+            left_block_id = left_block.block_id
+            right_block_id = right_block.block_id
+            block_size = max(box_size(left_block.box), box_size(right_block.box))
+        else:
+            left_block_id = left_block
+            right_block_id = right_block
         super().__init__(block_size)
         self.left_block_id = left_block_id
         self.right_block_id = right_block_id
