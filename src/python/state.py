@@ -103,6 +103,10 @@ class Block:
         return self.__box
 
     @property
+    def size(self) -> int:
+        return self.__box.size
+
+    @property
     def wh(self) -> Tuple[int, int]:
         return self.__box.wh
 
@@ -143,9 +147,32 @@ class Block:
         merged_block = Block(f'{global_block_id}', merged_box)
         return merged_block
 
+    def mergable(self, block: 'Block') -> bool:
+        return self.__box.mergable(block.box)
+
 
 def parse_blocks(text: str) -> List[Block]:
     raise NotImplementedError
+
+
+def get_biggest_block(blocks: List[Block]) -> Optional[Block]:
+    max_size = -1
+    cur_block = None
+    for block in blocks:
+        if block.size > max_size:
+            max_size = block.size
+            cur_block = block
+    return cur_block
+
+
+def get_smallest_block(blocks: List[Block]) -> Optional[Block]:
+    min_size = 99999999
+    cur_block = None
+    for block in blocks:
+        if block.size < min_size:
+            min_size = block.size
+            cur_block = block
+    return cur_block
 
 
 class State:
@@ -209,6 +236,9 @@ class State:
 
     def blocks(self) -> List[Block]:
         return copy(self.__blocks)
+
+    def block_ids(self) -> List[BlockId]:
+        return [b.block_id for b in self.__blocks]
 
     def global_block_id(self) -> str:
         return self.__global_block_id
@@ -412,6 +442,56 @@ class State:
 
         return moves, (last_bid,)
 
+    def merge_all(self, block_ids: Optional[List[BlockId]]=None) -> Tuple[List[Move], Tuple[BlockId]]:
+        moves = []
+        merged_bid = None
+        if block_ids is None:
+            blocks = self.blocks()
+        else:
+            blocks = self.get_blocks(block_ids)
+
+        while len(blocks) > 1:
+            biggest_mergable_block = self.get_biggest_and_mergable_block(blocks)
+            mergable_blocks = self.mergable_blocks(biggest_mergable_block)
+            smallest_mergable_block = get_smallest_block(mergable_blocks)
+
+            move, (merged_bid,) = self.merge(biggest_mergable_block.block_id, smallest_mergable_block.block_id)
+            moves.append(move)
+            blocks.append(self.get_blocks([merged_bid])[0])
+            blocks.remove(biggest_mergable_block)
+            if smallest_mergable_block in blocks:
+                blocks.remove(smallest_mergable_block)
+
+        return moves, (merged_bid,)
+
+    def get_biggest_and_mergable_block(self, blocks: List[Block]) -> Optional[Block]:
+        blocks = copy(blocks)
+        while len(blocks) > 0:
+            biggest_block = get_biggest_block(blocks)
+            mergable_blocks = self.mergable_blocks(biggest_block)
+            if len(mergable_blocks) > 0:
+                return biggest_block
+            blocks.remove(biggest_block)
+        return None
+
+    def get_blocks(self, block_ids: List[BlockId]) -> List[Block]:
+        all_blocks = self.blocks()
+        result_blocks = []
+        for block_id in block_ids:
+            for present_block in all_blocks:
+                if present_block.block_id == block_id:
+                    result_blocks.append(present_block)
+        if len(result_blocks) != len(block_ids):
+            raise Exception('Not all blocks are present in state')
+        return result_blocks
+
+    def mergable_blocks(self, block: BlockId) -> List[Block]:
+        result = []
+        for other_block in self.blocks():
+            if block.mergable(other_block):
+                result.append(other_block)
+        return result
+
 
 if __name__ == '__main__':
     box = BoxMk2([1, 2, 3, 4])
@@ -445,6 +525,10 @@ if __name__ == '__main__':
     moves, main_bid = state.color_rect_and_remerge([230, 225, 250, 250])
     moves, main_bid = state.color_rect_and_remerge([150, 225, 170, 250])
     moves, main_bid = state.color_rect_and_remerge([190, 190, 210, 210])
+
+    # moves, (bl_bid, br_bid, tr_bid, tl_bid) = state.pcut(30, 150)
+    # moves, (main_bid,) = state.merge_all()
+    # state.color(main_bid)
 
     cv2.imshow('cur', state.cur_image())
     cv2.waitKey(0)

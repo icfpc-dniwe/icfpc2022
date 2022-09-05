@@ -19,9 +19,10 @@ def problem_1() -> State:
     white = np.array([255, 255, 255, 255])
     black = np.array([0, 0, 0, 0])
 
-    __, __ = state.color('0', blue)
-    __, (__, __, __, desk) = state.pcut(345, 345)
-    __, __ = state.color(desk, black)
+    desk_box = [0, 0, 345, 345]
+
+    state.color('0', blue)
+    state.color_rect_and_remerge(desk_box, white)
 
     # __, (bid_m,) = state.merge(bid_l, bid_r)
     # __, __ = state.color(bid_m)
