@@ -332,12 +332,13 @@ class State:
         assert isinstance(y, int)
         assert 0 < x < w - 1 and 0 < y < h - 1
 
-    def color_rect_and_remerge(self, box: Union[Box, BoxMk2], color: Optional[Color] = None) -> Tuple[List[Move], Tuple[BlockId]]:
+    def color_rect_and_remerge(self, box: Union[Box, BoxMk2], color: Optional[Color] = None, no_merge: bool = False) -> Tuple[List[Move], Tuple[BlockId]]:
         if not isinstance(box, BoxMk2):
             box = BoxMk2(box)
 
         x_min, y_min, x_max, y_max = box.box
         moves = []
+        last_bid = None
         block_1 = self.block_at(x_min, y_min)
         block_2 = self.block_at(x_max-1, y_max-1)
         # w, h = self.wh
@@ -350,7 +351,6 @@ class State:
             if x_min == 0 and y_min == 0:
                 move_1, (bl_bid, br_bid, tr_bid, tl_bid) = self.pcut(x_max, y_max)
                 move_2, __ = self.color(bl_bid, color)
-                moves, (last_bid,) = self.merge_all()
                 # move_3, (m1_bid,) = self.merge(bl_bid, br_bid)
                 # move_4, (m2_bid,) = self.merge(tr_bid, tl_bid)
                 # move_5, (last_bid,) = self.merge(m1_bid, m2_bid)
@@ -390,10 +390,14 @@ class State:
                 raise NotImplementedError
 
             elif x_min == 0:
-                move_1, (bl_bid, br_bid, tr_bid, tl_bid) = self.pcut(x_max, y_min)
-                move_2, (bottom_bid, top_bid) = self.lcut_horizontal(1, y_max)
-                move_3, __ = self.color(bottom_bid, color)
-                moves, (last_bid,) = self.merge_all()
+                if abs(y_min - h/2) > abs(y_max - h/2):
+                    move_1, (bl_bid, br_bid, tr_bid, tl_bid) = self.pcut(x_max, y_min)
+                    move_2, (bottom_bid, top_bid) = self.lcut_horizontal(1, y_max)
+                    move_3, __ = self.color(bottom_bid, color)
+                else:
+                    move_1, (bl_bid, br_bid, tr_bid, tl_bid) = self.pcut(x_max, y_max)
+                    move_2, (bottom_bid, top_bid) = self.lcut_horizontal(1, y_min)
+                    move_3, __ = self.color(top_bid, color)
                 # move_4, (m1_bid,) = self.merge(bottom_bid, top_bid)
                 # move_5, (m2_bid,) = self.merge(m1_bid, tr_bid)
                 # move_6, (m3_bid,) = self.merge(br_bid, bl_bid)
@@ -401,10 +405,14 @@ class State:
                 # moves += [move_1, move_2, move_3, move_4, move_5, move_6, move_7]
 
             elif y_min == 0:
-                move_1, (bl_bid, br_bid, tr_bid, tl_bid) = self.pcut(x_max, y_max)
-                move_2, (left_bid, right_bid) = self.lcut_veritical(x_min, 1)
-                move_3, __ = self.color(right_bid, color)
-                moves, (last_bid,) = self.merge_all()
+                if abs(x_min - w/2) > abs(x_max - w/2):
+                    move_1, (bl_bid, br_bid, tr_bid, tl_bid) = self.pcut(x_min, y_max)
+                    move_2, (left_bid, right_bid) = self.lcut_veritical(x_max, 1)
+                    move_3, __ = self.color(left_bid, color)
+                else:
+                    move_1, (bl_bid, br_bid, tr_bid, tl_bid) = self.pcut(x_max, y_max)
+                    move_2, (left_bid, right_bid) = self.lcut_veritical(x_min, 1)
+                    move_3, __ = self.color(right_bid, color)
                 # move_4, (m1_bid,) = self.merge(left_bid, right_bid)
                 # move_5, (m2_bid,) = self.merge(m1_bid, br_bid)
                 # move_6, (m3_bid,) = self.merge(tr_bid, tl_bid)
@@ -412,10 +420,14 @@ class State:
                 # moves += [move_1, move_2, move_3, move_4, move_5, move_6, move_7]
 
             elif x_max == w:
-                move_1, (bl_bid, br_bid, tr_bid, tl_bid) = self.pcut(x_min, y_max)
-                move_2, (bottom_bid, top_bid) = self.lcut_horizontal(w-2, y_min)
-                move_3, __ = self.color(top_bid, color)
-                moves, (last_bid,) = self.merge_all()
+                if abs(y_min - h/2) > abs(y_max - h/2):
+                    move_1, (bl_bid, br_bid, tr_bid, tl_bid) = self.pcut(x_min, y_min)
+                    move_2, (bottom_bid, top_bid) = self.lcut_horizontal(w-2, y_max)
+                    move_3, __ = self.color(bottom_bid, color)
+                else:
+                    move_1, (bl_bid, br_bid, tr_bid, tl_bid) = self.pcut(x_min, y_max)
+                    move_2, (bottom_bid, top_bid) = self.lcut_horizontal(w-2, y_min)
+                    move_3, __ = self.color(top_bid, color)
                 # move_4, (m1_bid,) = self.merge(bottom_bid, top_bid)
                 # move_5, (m2_bid,) = self.merge(m1_bid, bl_bid)
                 # move_6, (m3_bid,) = self.merge(tr_bid, tl_bid)
@@ -423,10 +435,14 @@ class State:
                 # moves += [move_1, move_2, move_3, move_4, move_5, move_6, move_7]
 
             elif y_max == h:
-                move_1, (bl_bid, br_bid, tr_bid, tl_bid) = self.pcut(x_max, y_min)
-                move_2, (left_bid, right_bid) = self.lcut_veritical(x_min, h-2)
-                move_3, __ = self.color(right_bid, color)
-                moves, (last_bid,) = self.merge_all()
+                if abs(x_min - w/2) > abs(x_max - w/2):
+                    move_1, (bl_bid, br_bid, tr_bid, tl_bid) = self.pcut(x_min, y_min)
+                    move_2, (left_bid, right_bid) = self.lcut_veritical(x_max, h-2)
+                    move_3, __ = self.color(left_bid, color)
+                else:
+                    move_1, (bl_bid, br_bid, tr_bid, tl_bid) = self.pcut(x_max, y_min)
+                    move_2, (left_bid, right_bid) = self.lcut_veritical(x_min, h-2)
+                    move_3, __ = self.color(right_bid, color)
                 # move_4, (m1_bid,) = self.merge(left_bid, right_bid)
                 # move_5, (m2_bid,) = self.merge(m1_bid, tr_bid)
                 # move_6, (m3_bid,) = self.merge(br_bid, bl_bid)
@@ -434,10 +450,27 @@ class State:
                 # moves += [move_1, move_2, move_3, move_4, move_5, move_6, move_7]
 
             else:
-                move_1, (bl_bid_1, br_bid_1, tr_bid_1, tl_bid_1) = self.pcut(x_min, y_max)
-                move_2, (bl_bid_2, br_bid_2, tr_bid_2, tl_bid_2) = self.pcut(x_max, y_min)
-                move_3, __ = self.color(tl_bid_2, color)
-                moves, (last_bid,) = self.merge_all()
+                bl_dist = abs(x_min - w/2) + abs(y_min - h/w)
+                br_dist = abs(x_max - w/2) + abs(y_min - h/w)
+                tr_dist = abs(x_min - w/2) + abs(y_min - h/w)
+                tl_dist = abs(x_min - w/2) + abs(y_min - h/w)
+                max_dist = max(bl_dist, br_dist, tr_dist, tl_dist)
+                if bl_dist == max_dist:
+                    move_1, (bl_bid_1, br_bid_1, tr_bid_1, tl_bid_1) = self.pcut(x_min, y_min)
+                    move_2, (bl_bid_2, br_bid_2, tr_bid_2, tl_bid_2) = self.pcut(x_max, y_max)
+                    move_3, __ = self.color(bl_bid_2, color)
+                elif br_dist == max_dist:
+                    move_1, (bl_bid_1, br_bid_1, tr_bid_1, tl_bid_1) = self.pcut(x_max, y_min)
+                    move_2, (bl_bid_2, br_bid_2, tr_bid_2, tl_bid_2) = self.pcut(x_min, y_max)
+                    move_3, __ = self.color(br_bid_2, color)
+                elif tr_dist == max_dist:
+                    move_1, (bl_bid_1, br_bid_1, tr_bid_1, tl_bid_1) = self.pcut(x_max, y_max)
+                    move_2, (bl_bid_2, br_bid_2, tr_bid_2, tl_bid_2) = self.pcut(x_min, y_min)
+                    move_3, __ = self.color(tr_bid_2, color)
+                elif tl_dist == max_dist:
+                    move_1, (bl_bid_1, br_bid_1, tr_bid_1, tl_bid_1) = self.pcut(x_min, y_max)
+                    move_2, (bl_bid_2, br_bid_2, tr_bid_2, tl_bid_2) = self.pcut(x_max, y_min)
+                    move_3, __ = self.color(tl_bid_2, color)
                 # move_4, (m1_bid,) = self.merge(bl_bid_2, br_bid_2)
                 # move_5, (m2_bid,) = self.merge(tl_bid_2, tr_bid_2)
                 # move_6, (m3_bid,) = self.merge(m1_bid, m2_bid)
@@ -448,6 +481,9 @@ class State:
 
         else:
             raise NotImplementedError
+
+        if not no_merge:
+            moves, (last_bid,) = self.merge_all()
 
         return moves, (last_bid,)
 
