@@ -2,11 +2,12 @@ import numpy as np
 from copy import copy
 import typing as t
 
-from ..block import Block
+from ..block import Block, create_canvas
 from ..moves import ColorMove, Merge, Move
 from ..types import RGBAImage, Box, Color
 from ..box_utils import get_part, box_size, can_merge
-from ..scoring import image_similarity, block_similarity, static_cost
+from ..scoring import image_similarity, block_similarity, static_cost, score_program_agaist_nothing
+from . import color_blocks
 
 
 def blocks_are_neightbors(left_block: Block, right_block: Block) -> bool:
@@ -62,9 +63,8 @@ def find_top_left_block(blocks: t.Sequence[Block]) -> int:
 def merge_program(
         img: RGBAImage,
         blocks: t.Sequence[Block],
-        default_canvas: t.Optional[RGBAImage] = None,
         global_block_id: t.Optional[int] = None
-) -> t.Tuple[t.List[Block], t.List[Move]]:
+) -> t.Tuple[t.List[Block], t.List[Move], int]:
     neighbors_map = find_neighbors(blocks)
     new_blocks = []
     moves = []
@@ -115,13 +115,40 @@ def merge_program(
                 new_blocks.append(Block(f'{global_block_id}', merged_box, get_part(img, merged_box)))
                 del old_blocks[bottom_left_block]
                 del old_blocks[bottom_neighbor]
-    return new_blocks, moves
+    return new_blocks, moves, global_block_id
 
 
 def produce_program(
         img: RGBAImage,
         blocks: t.Sequence[Block],
-        default_canvas: t.Optional[RGBAImage] = None,
         global_block_id: t.Optional[int] = None
-) -> t.List[Move]:
-    pass
+) -> t.Tuple[RGBAImage, t.List[Move]]:
+    default_canvas = create_canvas(blocks, *img.shape[:2])
+    cur_canvas = default_canvas.copy()
+    old_cost = np.inf
+    new_cost = image_similarity(img, default_canvas)
+    moves = []
+    cur_blocks = blocks
+    cur_global_id = np.max([int(cur_block.block_id) for cur_block in blocks])
+    while new_cost < old_cost:
+        old_cost = new_cost
+        # try recoloring
+        recolor_canvas, recolor_moves = color_blocks.produce_program(img, cur_blocks, cur_canvas)
+        _, recolor_cost = score_program_agaist_nothing(img, default_canvas, recolor_canvas, moves + recolor_moves)
+        # try merging, then recoloring
+        new_blocks, merge_moves, new_global_id = merge_program(img, cur_blocks, cur_global_id)
+        merge_color_canvas, merge_color_moves = color_blocks.produce_program(img, new_blocks, cur_canvas)
+        _, merge_cost = score_program_agaist_nothing(img, default_canvas, merge_color_canvas,
+                                                     moves + merge_moves + merge_color_moves)
+        if recolor_cost < merge_cost:
+            new_cost = recolor_cost
+            cur_canvas = recolor_canvas
+            moves += recolor_moves
+        else:
+            new_cost = merge_cost
+            cur_canvas = merge_color_canvas
+            moves += merge_moves + merge_color_moves
+            cur_blocks = new_blocks
+            cur_global_id = new_global_id
+
+    return cur_canvas, moves

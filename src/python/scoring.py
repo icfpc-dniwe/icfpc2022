@@ -30,20 +30,20 @@ def score_program_agaist_nothing(
         source_img: RGBAImage,
         canvas_before: RGBAImage,
         canvas_after: RGBAImage,
-        box: Box,
         program: t.List[Move],
+        box: t.Optional[Box] = None,
         use_relative: bool = False
 ) -> t.Tuple[float, float]:
     do_nothing_cost = image_similarity(source_img, canvas_before)
     after_similarity = image_similarity(source_img, canvas_after)
     if use_relative:
         program_cost = sum(
-            [relative_static_cost(cur_move, get_block_size(cur_move, box_size(box))) for cur_move in program]
+            [relative_static_cost(cur_move, get_block_size(cur_move)) for cur_move in program]
         )
     else:
         h, w = source_img.shape[:2]
         img_area = h * w
         program_cost = sum(
-            [static_cost(cur_move, get_block_size(cur_move, box_size(box)), img_area) for cur_move in program]
+            [static_cost(cur_move, get_block_size(cur_move), img_area) for cur_move in program]
         )
     return do_nothing_cost, after_similarity + program_cost

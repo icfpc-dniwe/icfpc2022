@@ -25,3 +25,11 @@ def from_json(json_block: t.Dict[str, t.Any], canvas: t.Optional[RGBAImage] = No
         color = json_block['color']
         img_part = np.zeros((block_h, block_w, 4), dtype=np.uint8) + color
     return Block(json_block['blockId'], (x_min, y_min, x_max, y_max), img_part)
+
+
+def create_canvas(blocks: t.Iterable[Block], height: int, width: int) -> RGBAImage:
+    canvas = np.zeros((height, width, 4), dtype=np.uint8)
+    for cur_block in blocks:
+        box = cur_block.box
+        canvas[box[1]:box[3], box[0]:box[2]] = cur_block.img_part
+    return canvas
