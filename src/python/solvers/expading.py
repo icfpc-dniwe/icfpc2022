@@ -115,7 +115,7 @@ def produce_program(
     for _ in range(num_random_starts):
         starting_x = np.random.randint(0, w, size=num_random_points)
         starting_y = np.random.randint(0, h, size=num_random_points)
-        cur_tolerance = np.random.randint(0, 11)
+        cur_tolerance = np.random.randint(0, 20)
         cur_return_best = np.random.rand() < 0.8
         starting_points = list(zip(starting_x, starting_y))
         results, score = get_boxes(img, starting_points, tol_iter=cur_tolerance, return_best=cur_return_best)
